@@ -13,9 +13,8 @@ Privates Projekt, **nicht** auf der Übersichtsseite der Lern-Apps eingetragen.
 | Stimmgerät (chromatisch, Saitenanzeige, Zielsaite, a′ 435–445 Hz) | fertig, Hardware-Test am iPhone läuft |
 | Diagnose (Live-Werte, erkannte Töne, Selbsttest auf dem Gerät) | fertig |
 | Einstellungen (6/7 Saiten, Stimmung, Tonnamen, Vorzeichen, Referenzton, Eingangsschwelle) | fertig |
-| Datenschutz-Hinweis | fertig |
+| Impressum & Datenschutz (`LegalModal`, Fußzeile im Menü und in den Einstellungen) | fertig |
 | PWA: Manifest + Icons | fertig; Service Worker (offline) folgt mit Version 1 |
-| Impressum | folgt |
 | Trainer „Ton finden“, adaptive Wiederholung, Heatmap, Session, Gamification, Export/Import | Version 1, nach dem Hardware-Test |
 
 ## Funktionen

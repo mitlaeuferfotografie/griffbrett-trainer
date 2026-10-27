@@ -5,7 +5,7 @@ Private Gitarren-App für einen erwachsenen, ausgebildeten Musiker (E-Gitarre, s
 ## Rahmen
 - **Privat:** eigenes Repo `mitlaeuferfotografie/griffbrett-trainer`, GitHub Pages. **Nie** auf der Übersichtsseite mitlaeuferfotografie.github.io eintragen (den Skill `lern-app-uebersicht` hier nicht verwenden). Kein Teil des Musik-App-Ökosystems für die Schule.
 - Die Schulregeln der Lern-Apps gelten **nicht** (keine Sterne, kein Spielstand-Code, kein Lehrer-Bereich, keine kindgerechten Texte, kein Dienst-Impressum). Gemeinsame Technik schon: React 18, Tailwind v3 beim Bauen erzeugt, `lucide-react`, esbuild, keine Drittanbieter zur Laufzeit (kein CDN, keine Webfonts, keine Analyse), Tailwind-Klassen immer vollständig ausschreiben.
-- **Impressum** folgt später; vorher beim Nutzer nachfragen. Datenschutz-Hinweis ist in `PrivacyModal` (App.jsx).
+- **Impressum & Datenschutz** in `LegalModal` (App.jsx), private Angaben in der Konstante `IMPRESSUM` (nicht das Dienst-Impressum der Schul-Apps). Rechtstext nur nach Vorgabe des Nutzers ändern.
 - Hauptgerät **iPhone Safari, Hochformat**, als Homescreen-App. Desktop nur nebenbei.
 
 ## Code-Struktur
