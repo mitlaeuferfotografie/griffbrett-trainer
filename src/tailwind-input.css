@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Eigene Ergänzungen (ersetzt style.css der Schwester-Apps) */
+html,
+body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.safe-area {
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+  padding-left: max(env(safe-area-inset-left), 1rem);
+  padding-right: max(env(safe-area-inset-right), 1rem);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
