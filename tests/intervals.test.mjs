@@ -107,3 +107,47 @@ test('Richtung: Aufwärts-Schlüssel bleiben unverändert (Lernstand gültig)', 
   assert.ok(up.every((k) => !k.startsWith('-')));
   assert.equal(shapesFor(STD).length, shapesFor(STD, 'up').length + shapesFor(STD, 'down').length);
 });
+
+import { spellInterval, nameChoices, intervalNumber } from '../src/lib/intervals.js';
+import { spellName } from '../src/lib/scales.js';
+
+const nm = (x) => spellName(x.letter, x.acc);
+const sp = (rootMidi, semis, prefer) => {
+  const r = spellInterval(rootMidi, semis, prefer);
+  return [nm(r.root), nm(r.target)];
+};
+
+test('Zielton benennen: Schreibweise über die Intervallnummer', () => {
+  assert.deepEqual(sp(48, 4), ['C', 'E']); // große Terz
+  assert.deepEqual(sp(48, 3), ['C', 'Es']); // kleine Terz
+  assert.deepEqual(sp(51, 4), ['Es', 'G']); // große Terz über Es (nicht Dis–Fisis)
+  assert.deepEqual(sp(57, 3), ['A', 'C']); // kleine Terz über A
+  assert.deepEqual(sp(48, 6), ['C', 'Ges']); // ♭5 über C
+  assert.deepEqual(sp(52, 10), ['E', 'D']); // kleine Septime
+  assert.deepEqual(sp(59, 7), ['H', 'Fis']); // Quinte über H
+  assert.deepEqual(sp(54, 4), ['Fis', 'Ais']); // Gleichstand → ♯
+  assert.deepEqual(sp(54, 4, 'flat'), ['Ges', 'B']);
+  assert.deepEqual(sp(48, 12), ['C', 'C']);
+  // abwärts: Stufe in der tieferen Oktave
+  assert.deepEqual(sp(48, -2), ['C', 'B']); // ♭7 darunter
+  assert.deepEqual(sp(55, -5), ['G', 'D']); // 5 darunter
+  assert.equal(intervalNumber(-12), 8);
+});
+
+test('Zielton benennen: vier verschiedene Antworten, genau eine richtig, naheliegende Fehler', () => {
+  const rand = mulberry32(3);
+  for (let root = 40; root < 64; root++) {
+    for (const semis of [1, 3, 4, 6, 7, 10, -2, -5, 12]) {
+      const { target } = spellInterval(root, semis);
+      const ch = nameChoices(target, rand);
+      assert.equal(ch.length, 4);
+      assert.equal(ch.filter((c) => c.correct).length, 1);
+      assert.equal(new Set(ch.map(nm)).size, 4);
+    }
+  }
+  // große Terz über C: kleine Terz (Es) ist praktisch immer dabei
+  const { target } = spellInterval(48, 4);
+  let es = 0;
+  for (let i = 0; i < 50; i++) if (nameChoices(target, rand).some((c) => nm(c) === 'Es')) es++;
+  assert.ok(es >= 40, String(es));
+});

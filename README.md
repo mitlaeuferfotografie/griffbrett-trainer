@@ -15,7 +15,7 @@ Privates Projekt, **nicht** auf der Übersichtsseite der Lern-Apps eingetragen.
 | **Version 1:** Ton finden, adaptive Wiederholung, Heatmap, Session, Gamification, Export/Import, Hell-Modus, Offline | fertig (28.10.2026), Praxistest am iPhone steht aus |
 | Übung „Tonlauf“ (früher „Fallende Töne“; Timing, steigendes Tempo) | fertig (28.10.2026) |
 | Impressum & Datenschutz | fertig |
-| **Ausbaustufe 2:** Intervalle als Griff-Formen (auf- und abwärts, „Grundton zuerst“) | fertig (28.10.2026), Praxistest steht aus |
+| **Ausbaustufe 2:** Intervalle als Griff-Formen (auf- und abwärts, „Grundton zuerst“, „Zielton benennen“) | fertig (28.10.2026), Praxistest steht aus |
 | Tonarten-Übersicht (Griffbrett bis Bund 24) + Übung „Stufen finden“ | fertig (28.10.2026) |
 | Griffbrett waagerecht (dicke Saite unten, Punkte auf Saiten) + Querformat für Übungen | fertig (28.10.2026) |
 | **Ausbaustufe 3:** Improvisieren – Live-Stufen, Lage-Schätzung, Auswertung Tonleiter/Modus | erste Version fertig (28.10.2026), Praxistest steht aus |
@@ -51,7 +51,8 @@ Alle natürlichen Töne einer Saite (Bund 1–12) in zufälliger Reihenfolge auf
 ### Intervalle – Ausbaustufe 2 (`src/lib/intervals.js`, `src/views/Intervals.jsx`)
 Ein Grundton wird auf dem Griffbrett gezeigt (mit Name und Saite), gefragt ist z. B. **„♭3 · kleine Terz · eine Saite höher“** oder abwärts **„↓ ♭7 · Stufe ♭7 darunter · große Sekunde abwärts“**. Gespielt wird der Zielton; richtig ist nur **genau** dieser Ton (eine Oktave daneben zählt nicht).
 - **Richtung** auf der Startseite: aufwärts, abwärts oder beides (Standard). Abwärts ist die **Stufe** gemeint: „5 darunter“ = die 5 der tieferen Oktave, also eine Quarte tiefer; Saitenwechsel gleiche Saite, 1 oder 2 Saiten tiefer.
-- **Grundton zuerst** (Option): erst den Grundton spielen, dann das Intervall – trainiert das Hören; die Reaktionszeit zählt ab dem Grundton.
+- **Zielton benennen** (Standard an): vor dem Spielen den Namen des Zieltons aus 4 Antworten antippen (richtige Schreibweise über die Intervallnummer, z. B. große Terz über Es = G; Ablenker: gleicher Stammton mit anderem Vorzeichen, Nachbar-Stammton, enharmonisch). Die Aufgabe zählt nur als richtig, wenn Name **und** gespielter Ton stimmen.
+- **Grundton zuerst** (Standard an): erst den Grundton spielen, dann das Intervall – trainiert das Hören; die Reaktionszeit zählt ab dem Grundton. Ablauf mit beiden Optionen: Name tippen → Grundton → Zielton.
 - **Lerneinheit = Griff-Form:** Intervall (mit Vorzeichen, abwärts negativ) × Saitenwechsel × Bundabstand, Schlüssel `"<halbtöne>:<saiten>:<bünde>"`, z. B. `7:1:2`, `-5:-1:0`. Dadurch ist der Sonderfall G→H-Saite eine eigene Form (z. B. Quinte eine Saite höher: normal +2 Bünde, über G→H +3).
 - Nur Formen innerhalb einer Hand-Lage (Bundabstand ≤ 4), auf der gleichen Saite also bis zur großen Terz. In Standardstimmung je Richtung gut drei Dutzend Formen.
 - **Progressive Einführung:** Oktave & Quinte → Quarte & Terzen → große Sekunde, kleine Septime, große Sexte → große Septime, kleine Sekunde, kleine Sexte, Tritonus. Freischaltung durch Können wie bei „Ton finden“.

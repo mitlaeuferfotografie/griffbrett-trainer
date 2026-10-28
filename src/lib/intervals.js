@@ -183,3 +183,73 @@ export function shapeShort(shape) {
   const f = shape.fretDelta === 0 ? '0' : shape.fretDelta > 0 ? `+${shape.fretDelta}` : `−${-shape.fretDelta}`;
   return `${o} ${f}`;
 }
+
+// ---------- Zielton benennen ----------
+// Schreibweise über Stammton + Intervallnummer (große Terz über Es = G, übermäßige … ♭5 über C = Ges),
+// nicht über Tonklassen. Bei schwarzem Grundton gewinnt die Schreibweise mit weniger Vorzeichen
+// (Grundton + Zielton zusammen), Gleichstand → Vorliebe ♯/♭.
+
+const LETTER_PC = [0, 2, 4, 5, 7, 9, 11];
+const wrapAcc = (d) => {
+  let a = (((d % 12) + 12) % 12);
+  if (a > 6) a -= 12;
+  return a;
+};
+
+/** Intervallnummer (2 … 8) einer Form, z. B. ♭3 → 3, ♭5 → 5, Oktave → 8. */
+export function intervalNumber(semis) {
+  return Number(intervalInfo(semis).degree.replace(/[♭♯]/g, ''));
+}
+
+function spellPair(rootPc, rootLetter, semis) {
+  const rootAcc = wrapAcc(rootPc - LETTER_PC[rootLetter]);
+  const letter = (rootLetter + intervalNumber(semis) - 1) % 7;
+  const pc = (((rootPc + semis) % 12) + 12) % 12;
+  return { root: { letter: rootLetter, acc: rootAcc }, target: { letter, acc: wrapAcc(pc - LETTER_PC[letter]), pc } };
+}
+
+/** { root: {letter, acc}, target: {letter, acc, pc} } für Grundton (MIDI) und Abstand (Halbtöne, mit Vorzeichen). */
+export function spellInterval(rootMidi, semis, prefer = 'sharp') {
+  const rootPc = pitchClass(rootMidi);
+  const natural = LETTER_PC.indexOf(rootPc);
+  if (natural >= 0) return spellPair(rootPc, natural, semis);
+  const sharp = spellPair(rootPc, LETTER_PC.indexOf(rootPc - 1), semis);
+  const flat = spellPair(rootPc, LETTER_PC.indexOf((rootPc + 1) % 12), semis);
+  const cost = (x) => Math.abs(x.root.acc) + Math.abs(x.target.acc) + (Math.abs(x.target.acc) > 1 ? 2 : 0);
+  if (cost(sharp) !== cost(flat)) return cost(sharp) < cost(flat) ? sharp : flat;
+  return prefer === 'flat' ? flat : sharp;
+}
+
+const RARE = new Set(['2:1', '6:1', '0:-1', '3:-1']); // Eis, His, Ces, Fes
+
+/**
+ * Vier Antworten (richtige + 3 naheliegende Fehler), gemischt: [{ letter, acc, correct }].
+ * Fehlertypen: gleicher Stammton mit anderem Vorzeichen (große/kleine Verwechslung),
+ * Nachbar-Stammton (verzählt), enharmonische Verwechslung (nur wenn der Zielton ein Vorzeichen hat).
+ */
+export function nameChoices(target, rand = Math.random) {
+  const pool = [];
+  for (let letter = 0; letter < 7; letter++) {
+    for (const acc of [-1, 0, 1]) {
+      if (letter === target.letter && acc === target.acc) continue;
+      if (RARE.has(`${letter}:${acc}`) && letter !== target.letter) continue;
+      const pc = (LETTER_PC[letter] + acc + 12) % 12;
+      const dp = Math.min((pc - target.pc + 12) % 12, (target.pc - pc + 12) % 12);
+      const dl = Math.min((letter - target.letter + 7) % 7, (target.letter - letter + 7) % 7);
+      let score;
+      if (dp === 0) score = target.acc !== 0 ? 1 : 99;
+      else if (dl === 0 && dp === 1) score = 0;
+      else if (dl === 1 && dp <= 2) score = 0.6;
+      else if (dp <= 2) score = 1.5;
+      else score = 5 + dp;
+      if (score < 99) pool.push({ letter, acc, score: score + rand() * 0.7 });
+    }
+  }
+  pool.sort((a, b) => a.score - b.score);
+  const out = [{ letter: target.letter, acc: target.acc, correct: true }, ...pool.slice(0, 3).map(({ letter, acc }) => ({ letter, acc, correct: false }))];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}

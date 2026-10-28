@@ -2,3 +2,4 @@ node_modules/
 _site/
 # Konzept- und Arbeitsnotizen bleiben lokal (privat), Inhalt steht in README/CLAUDE.md
 Konzeptnotiz_*.md
+.claude/

@@ -21,7 +21,8 @@ export const DEFAULT_SETTINGS = {
   showBests: true, // Bestwerte und Meilensteine
   theme: 'dark', // 'dark' | 'light'
   intervalDir: 'both', // Intervalle: 'both' | 'up' | 'down'
-  intervalRootFirst: false, // Intervalle: erst Grundton, dann Intervall spielen
+  intervalRootFirst: true, // Intervalle: erst Grundton, dann Intervall spielen
+  intervalNameQuiz: true, // Intervalle: vor dem Spielen den Namen des Zieltons antippen
   scaleRoot: 7, // Tonarten: zuletzt gewählter Grundton (Tonklasse, 7 = G)
   scaleId: 'major', // Tonarten: zuletzt gewählte Skala
   scalePattern: 'all', // Tonarten: 'all' (ganzes Griffbrett) | 3 (3NPS) | 2 (2NPS)
@@ -31,13 +32,23 @@ export const DEFAULT_SETTINGS = {
   homeHintDismissed: false, // Hinweis „Zum Home-Bildschirm“ ausgeblendet
   scaleColors: 'mono', // Tonarten: 'mono' (einfarbig, Grundton hervorgehoben) | 'degree' (Stufenfarben)
   micExplained: false,
+  settingsRev: 1, // Stand der Grundeinstellungen (für einmalige Umstellungen alter Daten)
 };
+
+/** Gespeicherte Einstellungen mit Grundwerten ergänzen; einmalige Umstellungen nach settingsRev. */
+export function mergeSettings(stored = {}) {
+  const s = { ...DEFAULT_SETTINGS, ...stored };
+  // Rev 1 (28.10.2026): „Grundton zuerst“ standardmäßig an
+  if ((stored.settingsRev || 0) < 1) s.intervalRootFirst = true;
+  s.settingsRev = DEFAULT_SETTINGS.settingsRev;
+  return s;
+}
 
 export function loadData() {
   try {
     const raw = localStorage.getItem(KEY);
     const data = raw ? JSON.parse(raw) : {};
-    return { settings: { ...DEFAULT_SETTINGS, ...(data.settings || {}) }, progress: normalizeProgress(data.progress) };
+    return { settings: mergeSettings(data.settings || {}), progress: normalizeProgress(data.progress) };
   } catch {
     return { settings: { ...DEFAULT_SETTINGS }, progress: normalizeProgress(null) };
   }
@@ -75,7 +86,7 @@ export function parseImport(text) {
   if (!obj.progress || typeof obj.progress.units !== 'object') return { ok: false, error: 'In der Datei ist kein Lernstand enthalten.' };
   return {
     ok: true,
-    data: { settings: { ...DEFAULT_SETTINGS, ...(obj.settings || {}), micExplained: true }, progress: normalizeProgress(obj.progress) },
+    data: { settings: { ...mergeSettings(obj.settings || {}), micExplained: true }, progress: normalizeProgress(obj.progress) },
     exportedAt: obj.exportedAt,
   };
 }

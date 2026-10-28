@@ -3,7 +3,8 @@
 // Gleiche Lernlogik wie „Ton finden“, eigener Lernstand (progress.intervals).
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Pause, Play, Square, Check, X, Mic, Hand, Eye, TrendingUp, Unlock, Shapes } from 'lucide-react';
-import { noteName } from '../lib/notes.js';
+import { noteName, octaveOf } from '../lib/notes.js';
+import { spellName } from '../lib/scales.js';
 import { getTuning } from '../lib/tunings.js';
 import { stringName } from '../lib/fretboard.js';
 import { applyAnswer, status, FAST_SEC } from '../lib/srs.js';
@@ -11,7 +12,7 @@ import { createSession, pickTask, advanceSession } from '../lib/session.js';
 import { addPractice, improvements, sessionSummary, evaluateMilestones, fmtSec } from '../lib/stats.js';
 import {
   INTERVALS, INTERVAL_GROUPS, shapeInfo, activeShapes, shapesFor, makeIntervalTask, judgeInterval,
-  computeIntervalUnlocked, intervalUnlockProgress, offsetLabel, parseShapeKey, shapeShort,
+  computeIntervalUnlocked, intervalUnlockProgress, offsetLabel, parseShapeKey, shapeShort, spellInterval, nameChoices,
 } from '../lib/intervals.js';
 import { startMic } from '../audio/mic.js';
 import { useMicStatus, useWakeLock } from '../ui/hooks.js';
@@ -33,6 +34,20 @@ const DIR_OPTIONS = [
   { value: 'up', label: 'Aufwärts' },
   { value: 'down', label: 'Abwärts' },
 ];
+
+function Toggle({ on, onClick, title, text }) {
+  return (
+    <button onClick={onClick} className="w-full flex items-center justify-between pt-4">
+      <span className="text-left">
+        <span className="font-bold block">{title}</span>
+        <span className="text-xs text-slate-400">{text}</span>
+      </span>
+      <span className={`w-12 h-7 rounded-full p-1 transition-colors flex-shrink-0 ml-3 ${on ? 'bg-indigo-500' : 'bg-slate-700'}`}>
+        <span className={`block w-5 h-5 rounded-full bg-white transition-transform ${on ? 'translate-x-5' : ''}`} />
+      </span>
+    </button>
+  );
+}
 
 /** Übersicht aller Formen: Zeilen = Intervalle, Kästchen = Formen (=, +1, +2 Saiten; Bundabstand). */
 export function ShapeMap({ strings, units, unlocked, highlight, dir = 'both' }) {
@@ -72,6 +87,7 @@ export function ShapeMap({ strings, units, unlocked, highlight, dir = 'both' }) 
 }
 
 function IntervalBoard({ strings, fretMax, names, task, feedback, onTap }) {
+  const rootLabel = task.rootName || noteName(task.rootMidi, names);
   const showTarget = !!feedback;
   return (
     <Fretboard
@@ -81,7 +97,7 @@ function IntervalBoard({ strings, fretMax, names, task, feedback, onTap }) {
       size={onTap ? 'lg' : 'md'}
       highlightString={task.string}
       cell={(s, f) => {
-        if (s === task.rootString && f === task.rootFret) return { className: 'bg-indigo-500 text-white', label: noteName(task.rootMidi, names) };
+        if (s === task.rootString && f === task.rootFret) return { className: 'bg-indigo-500 text-white', label: rootLabel };
         if (showTarget && s === task.string && f === task.fret)
           return { className: 'bg-emerald-500 text-emerald-950', label: shapeInfo(task.semis).degree };
         if (showTarget && !feedback.correct && s === task.string && f === feedback.playedFret)
@@ -134,15 +150,18 @@ export function IntervalsView({ settings, update, progress, setProgress, onBack 
         </p>
         <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mt-4 mb-2">Richtung</p>
         <Segmented options={DIR_OPTIONS} value={dir} onChange={(v) => update({ intervalDir: v })} />
-        <button onClick={() => update({ intervalRootFirst: !settings.intervalRootFirst })} className="w-full flex items-center justify-between pt-4">
-          <span className="text-left">
-            <span className="font-bold block">Grundton zuerst spielen</span>
-            <span className="text-xs text-slate-400">Erst den Grundton, dann das Intervall – trainiert auch das Hören.</span>
-          </span>
-          <span className={`w-12 h-7 rounded-full p-1 transition-colors flex-shrink-0 ml-3 ${settings.intervalRootFirst ? 'bg-indigo-500' : 'bg-slate-700'}`}>
-            <span className={`block w-5 h-5 rounded-full bg-white transition-transform ${settings.intervalRootFirst ? 'translate-x-5' : ''}`} />
-          </span>
-        </button>
+        <Toggle
+          on={settings.intervalNameQuiz}
+          onClick={() => update({ intervalNameQuiz: !settings.intervalNameQuiz })}
+          title="Zielton benennen"
+          text="Vor dem Spielen den Namen des Zieltons antippen – verbindet Griff-Form und Notenname."
+        />
+        <Toggle
+          on={settings.intervalRootFirst}
+          onClick={() => update({ intervalRootFirst: !settings.intervalRootFirst })}
+          title="Grundton zuerst spielen"
+          text="Erst den Grundton, dann das Intervall – trainiert auch das Hören."
+        />
       </Card>
       <button
         onClick={begin}
@@ -184,6 +203,9 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
   const fretMax = settings.fretMax;
   const dir = settings.intervalDir;
   const rootFirst = settings.intervalRootFirst;
+  const nameQuiz = settings.intervalNameQuiz;
+  const naming = settings.naming;
+  const prefer = settings.accidentals === 'flat' ? 'flat' : 'sharp';
   const shapes = useMemo(
     () => activeShapes(strings, computeIntervalUnlocked(strings, progress.intervals.units, progress.intervals.unlocked[tuning.id] || 1, dir), dir),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -211,7 +233,8 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
   const lastMidiRef = useRef(null);
   const taskId = useRef(0);
   const finishedRef = useRef(false);
-  const [stage, setStage] = useState('target'); // 'root' | 'target'
+  const [stage, setStage] = useState('target'); // 'name' | 'root' | 'target'
+  const [namePick, setNamePick] = useState(null); // { name, ok }
   const [rootHint, setRootHint] = useState(false);
 
   const inputModeRef = useRef(inputMode);
@@ -274,9 +297,23 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
     taskId.current += 1;
     setFeedback(null);
     setRootHint(false);
+    setNamePick(null);
+    const sp = spellInterval(t.rootMidi, t.semis, prefer);
+    const rootName = spellName(sp.root.letter, sp.root.acc, naming);
+    const targetName = spellName(sp.target.letter, sp.target.acc, naming);
+    const choices = nameChoices(sp.target).map((c) => ({ ...c, name: spellName(c.letter, c.acc, naming) }));
+    setStage(nameQuiz ? 'name' : rootFirst && inputModeRef.current === 'mic' ? 'root' : 'target');
+    setTask({ ...t, rootName, targetName, choices, id: taskId.current, shownAt: performance.now() });
+  }, [strings, shapes, durationMs, finish, make, rootFirst, nameQuiz, naming, prefer]);
+
+  // Name gewählt → weiter zum Spielen (bei falschem Namen bleibt die Lösung sichtbar)
+  const pickName = (c) => {
+    if (!task || stage !== 'name' || feedback) return;
+    setNamePick({ name: c.name, ok: c.correct });
     setStage(rootFirst && inputModeRef.current === 'mic' ? 'root' : 'target');
-    setTask({ ...t, id: taskId.current, shownAt: performance.now() });
-  }, [strings, shapes, durationMs, finish, make, rootFirst]);
+    taskId.current += 1;
+    setTask({ ...task, id: taskId.current, shownAt: performance.now() });
+  };
 
   useEffect(() => {
     nextTask();
@@ -315,7 +352,10 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
   const answer = (midi, rtMs, mode) => {
     if (!task || feedback || phase !== 'run') return;
     const now = Date.now();
-    const res = midi == null ? { correct: false, playedFret: null, creditKey: task.key } : judgeInterval(strings, task, midi);
+    const played = midi == null ? { correct: false, playedFret: null, creditKey: task.key } : judgeInterval(strings, task, midi);
+    // Mit „Zielton benennen“ zählt die Aufgabe nur als richtig, wenn auch der Name stimmte
+    const nameWrong = nameQuiz && !(namePick && namePick.ok);
+    const res = { ...played, playedOk: played.correct, nameWrong, correct: played.correct && !nameWrong };
     const rt = midi == null ? null : rtMs / 1000;
     setProgress((p) => {
       const units = { ...p.intervals.units, [res.creditKey]: applyAnswer(p.intervals.units[res.creditKey], { correct: res.correct, rt, mode, now }) };
@@ -465,11 +505,32 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
                     </div>
                     <div className="text-xl font-bold text-slate-300 mt-2">{iv.down ? `Stufe ${iv.degree} darunter · ${iv.distance}` : iv.name}</div>
                     <div className="text-lg text-slate-400">
-                      {offsetLabel(task.offset)} · Grundton {noteName(task.rootMidi, names)} auf der {stringName(strings, task.rootString, names, { dative: true })}
+                      {offsetLabel(task.offset)} · Grundton {task.rootName} auf der {stringName(strings, task.rootString, names, { dative: true })}
                     </div>
                     {stage === 'root' && (
                       <div className={`mt-3 inline-block px-4 py-1.5 rounded-full border-2 font-bold ${rootHint ? 'border-orange-500 text-orange-300' : 'border-indigo-400 text-indigo-200'}`}>
-                        {rootHint ? 'Erst den Grundton' : 'Zuerst Grundton'} {noteName(task.rootMidi, names, { octave: true })} spielen
+                        {rootHint ? 'Erst den Grundton' : 'Zuerst Grundton'} {task.rootName}{octaveOf(task.rootMidi)} spielen
+                      </div>
+                    )}
+                    {stage === 'name' && (
+                      <div className="mt-4">
+                        <p className="text-sm font-bold text-indigo-200 mb-2">Wie heißt der Zielton?</p>
+                        <div className="grid grid-cols-4 gap-2">
+                          {task.choices.map((c) => (
+                            <button
+                              key={c.name}
+                              onClick={() => pickName(c)}
+                              className="py-4 rounded-2xl bg-slate-950 border-2 border-slate-700 text-2xl font-black active:scale-95 active:border-indigo-400 transition-transform"
+                            >
+                              {c.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {stage !== 'name' && namePick && (
+                      <div className={`mt-3 inline-block px-4 py-1.5 rounded-full border-2 font-bold ${namePick.ok ? 'border-emerald-500 text-emerald-300' : 'border-orange-500 text-orange-300'}`}>
+                        {namePick.ok ? `Ziel: ${task.targetName}` : `${namePick.name} – richtig ist ${task.targetName}`}
                       </div>
                     )}
                     {task.kind === 'new' && (
@@ -477,23 +538,34 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
                     )}
                   </>
                 ) : feedback.correct ? (
-                  <div className="flex items-center justify-center gap-3 text-emerald-400 pt-8">
+                  <div className="pt-6">
+                  <div className="flex items-center justify-center gap-3 text-emerald-400">
                     <Check className="w-10 h-10" strokeWidth={3} />
-                    <span className="text-3xl font-black">{noteName(task.targetMidi, names)}</span>
+                    <span className="text-3xl font-black">{task.targetName}</span>
                     {feedback.rt != null && (
                       <span className={`text-xl font-bold tabular ${feedback.rt <= FAST_SEC ? 'text-emerald-300' : 'text-slate-400'}`}>{fmtSec(feedback.rt)}</span>
                     )}
+                  </div>
+                  <p className="text-slate-300 mt-1">
+                    {task.targetName} = {iv.down ? `Stufe ${iv.degree} unter` : `${iv.name} über`} {task.rootName}
+                  </p>
                   </div>
                 ) : (
                   <div className="pt-6">
                     <div className="flex items-center justify-center gap-3 text-orange-400">
                       <X className="w-10 h-10" strokeWidth={3} />
-                      <span className="text-3xl font-black">{feedback.midi == null ? 'Lösung' : 'Daneben'}</span>
+                      <span className="text-3xl font-black">{feedback.midi == null ? 'Lösung' : feedback.playedOk ? 'Name falsch' : 'Daneben'}</span>
                     </div>
+                    {feedback.playedOk ? (
+                      <p className="text-slate-300 mt-1">
+                        Richtig gespielt – der Zielton heißt <span className="font-black text-slate-50">{task.targetName}</span> ({iv.down ? `Stufe ${iv.degree} unter` : `${iv.name} über`} {task.rootName}), nicht {namePick?.name}.
+                      </p>
+                    ) : (
                     <p className="text-slate-300 mt-1">
                       {feedback.midi != null && <>Gespielt: {noteName(feedback.midi, names, { octave: true })} · </>}
-                      Gesucht: {noteName(task.targetMidi, names, { octave: true })} ({stringName(strings, task.string, names)}, Bund {task.fret})
+                      Gesucht: {task.targetName}{octaveOf(task.targetMidi)} ({stringName(strings, task.string, names)}, Bund {task.fret})
                     </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -504,7 +576,7 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
                   names={names}
                   task={task}
                   feedback={feedback}
-                  onTap={inputMode === 'tap' && !feedback ? (s, f) => answer(strings[s] + f, performance.now() - task.shownAt, 'tap') : undefined}
+                  onTap={inputMode === 'tap' && !feedback && stage !== 'name' ? (s, f) => answer(strings[s] + f, performance.now() - task.shownAt, 'tap') : undefined}
                 />
               </div>
             </Card>
@@ -520,7 +592,7 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
                 names={names}
                 task={task}
                 feedback={feedback}
-                onTap={inputMode === 'tap' && !feedback ? (s, f) => answer(strings[s] + f, performance.now() - task.shownAt, 'tap') : undefined}
+                onTap={inputMode === 'tap' && !feedback && stage !== 'name' ? (s, f) => answer(strings[s] + f, performance.now() - task.shownAt, 'tap') : undefined}
               />
             </Card>
           )}
@@ -529,7 +601,7 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
               <MicAnswer
                 settings={settings}
                 task={task}
-                armed={!feedback && running}
+                armed={!feedback && running && stage !== 'name'}
                 blockMidi={lastMidiRef.current}
                 onNote={onMicNote}
                 isCorrect={(m) =>
