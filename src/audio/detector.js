@@ -20,6 +20,8 @@ export const TRACKER_DEFAULTS = {
   onsetDb: 9,
   onsetWindow: 6,
   onsetRefractoryMs: 150,
+  minRepeatMs: 0, // gleicher Ton innerhalb dieser Zeit wird nicht erneut gemeldet
+  adaptiveFloorDb: 0, // > 0: Ton muss so viel über dem mitlaufend gemessenen Raumpegel liegen
 };
 
 /**
@@ -29,12 +31,16 @@ export const TRACKER_DEFAULTS = {
  * (mic.js, FAST_BUFFER_SIZE) ≈ 60–80 ms bis zur Erkennung statt ≈ 150 ms.
  */
 export const TRACKER_FAST = {
-  stableFrames: 2,
+  stableFrames: 3,
   toleranceCents: 50,
-  minClarity: 0.7,
+  minClarity: 0.8,
   releaseFrames: 6,
-  onsetDb: 6,
-  onsetRefractoryMs: 80,
+  onsetDb: 9,
+  onsetRefractoryMs: 200,
+  // gegen Doppelmeldungen beim Anschlag (v. a. mit Verzerrung)
+  minRepeatMs: 150,
+  // gegen Hintergrundgeräusche: Ton muss 12 dB über dem gemessenen Raumpegel liegen
+  adaptiveFloorDb: 12,
 };
 
 export function rmsToDb(rms) {
@@ -56,6 +62,8 @@ export function createNoteTracker(options = {}) {
   let stable = null; // { midi, midiFloat, since }
   let reattack = false;
   let lastOnset = -Infinity;
+  let lastEvent = { midi: null, time: -Infinity };
+  let floor = -90; // mitlaufender Raumpegel: folgt leisen Phasen schnell, steigt nur langsam
   const recentDb = [];
 
   function reset() {
@@ -85,10 +93,13 @@ export function createNoteTracker(options = {}) {
         reattack = true;
       }
     }
+    // Raumpegel nachführen (fällt sofort, steigt ca. 1,5 dB pro Sekunde)
+    floor = db < floor ? db : floor + 0.025;
     recentDb.push(db);
     if (recentDb.length > o.onsetWindow) recentDb.shift();
 
-    const valid = frame.freq != null && db >= o.minDb && frame.clarity >= o.minClarity;
+    const floorOk = !o.adaptiveFloorDb || db >= floor + o.adaptiveFloorDb;
+    const valid = frame.freq != null && db >= o.minDb && floorOk && frame.clarity >= o.minClarity;
     if (!valid) {
       invalid++;
       if (invalid >= o.releaseFrames) {
@@ -127,8 +138,11 @@ export function createNoteTracker(options = {}) {
         const midiFloat = median(history);
         if (!stable || stable.midi !== midi || reattack) {
           stable = { midi, midiFloat, since: frame.time };
-          event = { type: 'note', midi, midiFloat, time: frame.time };
           reattack = false;
+          if (!(midi === lastEvent.midi && frame.time - lastEvent.time < o.minRepeatMs)) {
+            event = { type: 'note', midi, midiFloat, time: frame.time };
+            lastEvent = { midi, time: frame.time };
+          }
         } else {
           stable = { ...stable, midiFloat };
         }

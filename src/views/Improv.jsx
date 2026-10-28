@@ -41,12 +41,14 @@ export function ImprovView({ settings, update, setProgress, onBack }) {
   const strings = tuning.strings;
   const names = namesOf(settings);
   const mic = useMicStatus();
-  const tracker = useTracker(settings, TRACKER_FAST);
-  // schneller Modus (kurzes Messfenster) nur, solange diese Ansicht offen ist
+  // Erkennung: 'fast' (kurzes Messfenster, für Läufe) oder 'normal' (ruhiger, weniger Fehltöne)
+  const detectMode = settings.improvDetect || 'fast';
+  const fast = detectMode === 'fast';
+  const tracker = useTracker(settings, fast ? TRACKER_FAST : null);
   useEffect(() => {
-    setFastMode(true);
+    setFastMode(fast);
     return () => setFastMode(false);
-  }, []);
+  }, [fast]);
   const [rootChoice, setRootChoice] = useState(settings.improvRoot ?? 'auto');
   const posPref = settings.improvPosition || 'auto';
   const posPrefRef = useRef(posPref);
@@ -99,7 +101,7 @@ export function ImprovView({ settings, update, setProgress, onBack }) {
 
   const begin = () => {
     if (settings.micExplained) startMic();
-    setFastMode(true);
+    setFastMode(fast);
     tracker.reset();
     eventsRef.current = [];
     trailRef.current = [];
@@ -139,11 +141,23 @@ export function ImprovView({ settings, update, setProgress, onBack }) {
           </p>
         </Card>
         <div className="mb-3">
+          <p className="text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-1">Erkennung</p>
+          <Segmented
+            options={[
+              { value: 'fast', label: 'Schnell (Läufe)' },
+              { value: 'normal', label: 'Genau' },
+            ]}
+            value={detectMode}
+            onChange={(v) => update({ improvDetect: v })}
+          />
+          <p className="text-xs text-slate-500 mt-1">„Schnell“ kommt bei Läufen und Riffs mit, reagiert aber empfindlicher. „Genau“ meldet weniger Fehltöne, verpasst bei sehr schnellem Spiel einzelne Töne.</p>
+        </div>
+        <div className="mb-3">
           <p className="text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-1">Lage auf dem Griffbrett</p>
           <Segmented options={posOptions} value={posPref} onChange={choosePosition} />
           <p className="text-xs text-slate-500 mt-1">Derselbe Ton liegt an mehreren Stellen. „Auto“ schätzt die Lage aus deiner Phrase; spielst du meist hoch, wähle „Hoch“.</p>
         </div>
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="mb-3">
           <SelectField label="Grundton" value={rootChoice} onChange={chooseRoot}>
             <option value="auto">Automatisch</option>
             {Array.from({ length: 12 }, (_, p) => (

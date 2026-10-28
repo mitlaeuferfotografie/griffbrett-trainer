@@ -114,3 +114,38 @@ test('Standard-Schwelle −75 dB: leiser Ton (−70 dB) wird erkannt, Rauschen o
   const tr2 = createNoteTracker();
   for (let i = 0; i < 10; i++) assert.equal(tr2.update(frame(i * 16, 45, 0.0003, 0.5)).event, null);
 });
+
+import { TRACKER_FAST } from '../src/audio/detector.js';
+import { pluckTone, roomNoise } from '../src/audio/synth.js';
+
+function streamProfile(parts, profile, bufferSize, sampleRate = 48000) {
+  const total = parts.reduce((a, p) => a + p.length, 0);
+  const audio = new Float32Array(total);
+  let off = 0;
+  for (const p of parts) {
+    audio.set(p, off);
+    off += p.length;
+  }
+  const det = createPitchDetector({ sampleRate, bufferSize });
+  const tr = createNoteTracker({ minDb: -75, ...profile });
+  const events = [];
+  for (let end = 4096; end <= total; end += 800) {
+    const u = tr.update({ time: (end / sampleRate) * 1000, ...det.detect(audio.subarray(end - bufferSize, end)) });
+    if (u.event) events.push(u.event.midi);
+  }
+  return events;
+}
+
+test('Schneller Modus: realistischer verzerrter Anschlag wird nicht doppelt gemeldet', () => {
+  const seq = [45, 48, 50, 52, 55, 57, 55, 52];
+  const parts = [roomNoise(1500)];
+  seq.forEach((m, i) => parts.push(pluckTone(m, 300, { drive: 8, seed: i + 1 })));
+  parts.push(roomNoise(1500));
+  assert.deepEqual(streamProfile(parts, TRACKER_FAST, 2048), seq);
+});
+
+test('Hintergrundgeräusche (Brummen, Störton) erzeugen keine Töne – normal und schnell', () => {
+  const parts = [roomNoise(4000, { seed: 3 })];
+  assert.deepEqual(streamProfile(parts, {}, 4096), []);
+  assert.deepEqual(streamProfile(parts, TRACKER_FAST, 2048), []);
+});

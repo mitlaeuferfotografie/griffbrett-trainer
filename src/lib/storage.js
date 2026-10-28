@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS = {
   scaleId: 'major', // Tonarten: zuletzt gewählte Skala
   scalePattern: 'all', // Tonarten: 'all' (ganzes Griffbrett) | 3 (3NPS) | 2 (2NPS)
   improvRoot: 'auto', // Improvisieren: 'auto' oder Tonklasse
+  improvDetect: 'fast', // Improvisieren: Erkennung 'fast' | 'normal'
   improvPosition: 'auto', // Improvisieren: bevorzugte Lage 'auto' | 'low' | 'mid' | 'high'
   homeHintDismissed: false, // Hinweis „Zum Home-Bildschirm“ ausgeblendet
   scaleColors: 'mono', // Tonarten: 'mono' (einfarbig, Grundton hervorgehoben) | 'degree' (Stufenfarben)

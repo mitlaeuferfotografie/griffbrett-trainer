@@ -80,3 +80,42 @@ function gaussian(rand) {
   const u = Math.max(rand(), 1e-12);
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rand());
 }
+
+/**
+ * Realistischer Anschlag: Geräuschimpuls (15 ms), Tonhöhe startet +25 Cent und pendelt ein,
+ * Pegelspitze beim Anschlag, Abklingen; optional verzerrt (drive). Für Tests der Notenverfolgung.
+ */
+export function pluckTone(midi, ms, { sampleRate = 48000, drive = 0, seed = 1 } = {}) {
+  const rand = mulberry32(seed);
+  const n = Math.round((ms / 1000) * sampleRate);
+  const out = new Float32Array(n);
+  const f0 = 440 * Math.pow(2, (midi - 69) / 12);
+  const amps = [1, 0.7, 0.5, 0.35, 0.25, 0.15];
+  const ph = amps.map(() => 0);
+  for (let i = 0; i < n; i++) {
+    const t = i / sampleRate;
+    const f = f0 * Math.pow(2, (25 * Math.exp(-t / 0.02)) / 1200);
+    let x = 0;
+    amps.forEach((a, k) => {
+      ph[k] += (2 * Math.PI * f * (k + 1)) / sampleRate;
+      x += a * Math.exp(-t * (k + 1) * 1.5) * Math.sin(ph[k]);
+    });
+    const env = Math.min(1, t / 0.004) * (1 + 0.8 * Math.exp(-t / 0.03)) * Math.exp(-t / 1.2);
+    let v = 0.15 * env * x + (t < 0.015 ? 0.15 * gaussian(rand) * (1 - t / 0.015) : 0);
+    if (drive) v = (Math.tanh(drive * v) / Math.tanh(drive)) * 0.5;
+    out[i] = v + 0.002 * gaussian(rand);
+  }
+  return out;
+}
+
+/** Raumklang ohne Spiel: Rauschen, Netzbrummen (100 Hz) und ein zeitweiser tonaler Störton. */
+export function roomNoise(ms, { sampleRate = 48000, seed = 9 } = {}) {
+  const rand = mulberry32(seed);
+  const n = Math.round((ms / 1000) * sampleRate);
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const t = i / sampleRate;
+    out[i] = 0.002 * gaussian(rand) + 0.004 * Math.sin(2 * Math.PI * 100 * t) + (Math.sin(2 * Math.PI * 1.5 * t) > 0.7 ? 0.002 * Math.sin(2 * Math.PI * 220 * t) : 0);
+  }
+  return out;
+}
