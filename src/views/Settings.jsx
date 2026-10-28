@@ -1,14 +1,16 @@
 import React, { useRef, useState } from 'react';
-import { Minus, Plus, Download, Upload, RotateCcw } from 'lucide-react';
+import { Minus, Plus, Download, Upload, RotateCcw, Guitar, Timer, Type, Mic, Trophy, HardDrive } from 'lucide-react';
 import { getTuning, tuningsFor, tuningNotes, DEFAULT_TUNING } from '../lib/tunings.js';
 import { buildGroups, groupLabel } from '../lib/curriculum.js';
 import { parseImport, emptyProgress } from '../lib/storage.js';
-import { Card, Header, Segmented, namesOf } from '../ui/common.jsx';
+import { Header, Segmented, Collapsible, namesOf } from '../ui/common.jsx';
 import { exportToFile, readFileText } from '../ui/backup.js';
+
+// Einstellungen in ausklappbaren Abschnitten; zugeklappt zeigt jeder Abschnitt die aktuelle Wahl.
 
 function Section({ title, children, hint }) {
   return (
-    <div className="mb-6">
+    <div className="mb-5 last:mb-0">
       <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-2">{title}</p>
       {children}
       {hint && <p className="text-xs text-slate-500 mt-1.5">{hint}</p>}
@@ -27,7 +29,7 @@ function Toggle({ label, value, onChange }) {
   );
 }
 
-export function SettingsView({ settings, update, data, setData, onBack, onPrivacy }) {
+export function SettingsView({ settings, update, data, setData, onBack }) {
   const names = namesOf(settings);
   const tunings = tuningsFor(settings.stringCount);
   const tuning = getTuning(settings.tuningId, settings.stringCount);
@@ -63,10 +65,18 @@ export function SettingsView({ settings, update, data, setData, onBack, onPrivac
     else setPendingImport(r);
   };
 
+  const accLabel = { sharp: sharpLabel, flat: flatLabel, both: `${sharpLabel}/${flatLabel}` }[settings.accidentals];
+  const lastExport = data.progress.lastExport ? new Date(data.progress.lastExport).toLocaleDateString('de-DE') : null;
+
   return (
     <div>
       <Header title="Einstellungen" onBack={onBack} />
-      <Card className="mb-4">
+
+      <Collapsible
+        title="Instrument"
+        icon={Guitar}
+        summary={`${settings.stringCount} Saiten · ${tuning.label(names)} (${tuningNotes(tuning, names)}) · a′ ${settings.a4} Hz`}
+      >
         <Section title="Saiten">
           <Segmented
             options={[{ value: 6, label: '6 Saiten' }, { value: 7, label: '7 Saiten' }]}
@@ -90,18 +100,44 @@ export function SettingsView({ settings, update, data, setData, onBack, onPrivac
             ))}
           </div>
         </Section>
-        <Section title="Bundbereich">
-          <Segmented
-            options={[{ value: 12, label: 'bis Bund 12' }, { value: 24, label: 'bis Bund 24' }]}
-            value={settings.fretMax}
-            onChange={(v) => update({ fretMax: v })}
-          />
+        <Section title="Referenzton a′">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => update({ a4: Math.max(435, settings.a4 - 1) })}
+              className="w-14 h-14 rounded-2xl bg-slate-950 border-2 border-slate-800 flex items-center justify-center active:scale-95"
+              aria-label="tiefer"
+            >
+              <Minus className="w-6 h-6" />
+            </button>
+            <div className="flex-1 text-center font-black text-2xl tabular">{settings.a4} Hz</div>
+            <button
+              onClick={() => update({ a4: Math.min(445, settings.a4 + 1) })}
+              className="w-14 h-14 rounded-2xl bg-slate-950 border-2 border-slate-800 flex items-center justify-center active:scale-95"
+              aria-label="höher"
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          </div>
         </Section>
+      </Collapsible>
+
+      <Collapsible
+        title="Training"
+        icon={Timer}
+        summary={`${settings.sessionMinutes} Min · bis Bund ${settings.fretMax} · Reihenfolge ${settings.groupMode === 'auto' ? 'automatisch' : 'manuell'}`}
+      >
         <Section title="Session-Dauer (Tagesziel)">
           <Segmented
             options={[{ value: 3, label: '3 Min' }, { value: 5, label: '5 Min' }, { value: 10, label: '10 Min' }]}
             value={settings.sessionMinutes}
             onChange={(v) => update({ sessionMinutes: v })}
+          />
+        </Section>
+        <Section title="Bundbereich">
+          <Segmented
+            options={[{ value: 12, label: 'bis Bund 12' }, { value: 24, label: 'bis Bund 24' }]}
+            value={settings.fretMax}
+            onChange={(v) => update({ fretMax: v })}
           />
         </Section>
         <Section
@@ -134,9 +170,13 @@ export function SettingsView({ settings, update, data, setData, onBack, onPrivac
             </div>
           )}
         </Section>
-      </Card>
+      </Collapsible>
 
-      <Card className="mb-4">
+      <Collapsible
+        title="Tonnamen & Darstellung"
+        icon={Type}
+        summary={`${settings.naming === 'de' ? 'Deutsch (H, B)' : 'International (B, B♭)'} · ${accLabel} · ${settings.theme === 'dark' ? 'Dunkel' : 'Hell'}`}
+      >
         <Section title="Tonnamen">
           <Segmented
             options={[{ value: 'de', label: 'Deutsch (H, B)' }, { value: 'int', label: 'International (B, B♭)' }]}
@@ -155,25 +195,16 @@ export function SettingsView({ settings, update, data, setData, onBack, onPrivac
             onChange={(v) => update({ accidentals: v })}
           />
         </Section>
-        <Section title="Referenzton a′">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => update({ a4: Math.max(435, settings.a4 - 1) })}
-              className="w-14 h-14 rounded-2xl bg-slate-950 border-2 border-slate-800 flex items-center justify-center active:scale-95"
-              aria-label="tiefer"
-            >
-              <Minus className="w-6 h-6" />
-            </button>
-            <div className="flex-1 text-center font-black text-2xl tabular">{settings.a4} Hz</div>
-            <button
-              onClick={() => update({ a4: Math.min(445, settings.a4 + 1) })}
-              className="w-14 h-14 rounded-2xl bg-slate-950 border-2 border-slate-800 flex items-center justify-center active:scale-95"
-              aria-label="höher"
-            >
-              <Plus className="w-6 h-6" />
-            </button>
-          </div>
+        <Section title="Darstellung">
+          <Segmented
+            options={[{ value: 'dark', label: 'Dunkel' }, { value: 'light', label: 'Hell' }]}
+            value={settings.theme}
+            onChange={(v) => update({ theme: v })}
+          />
         </Section>
+      </Collapsible>
+
+      <Collapsible title="Mikrofon" icon={Mic} summary={`Eingangsschwelle ${settings.minDb} dB`}>
         <Section
           title={`Eingangsschwelle: ${settings.minDb} dB`}
           hint="Leiser als die Schwelle wird ignoriert. Höher stellen, wenn Raumgeräusche als Töne erkannt werden; tiefer, wenn leise Töne fehlen. Den Pegel siehst du live in der Diagnose."
@@ -188,45 +219,43 @@ export function SettingsView({ settings, update, data, setData, onBack, onPrivac
             className="w-full accent-indigo-500"
           />
         </Section>
-        <Section title="Darstellung">
-          <Segmented
-            options={[{ value: 'dark', label: 'Dunkel' }, { value: 'light', label: 'Hell' }]}
-            value={settings.theme}
-            onChange={(v) => update({ theme: v })}
-          />
-        </Section>
-        <Section title="Motivation">
-          <Toggle label="Tagesziel und Übungskalender" value={settings.showGoals} onChange={(v) => update({ showGoals: v })} />
-          <Toggle label="Bestwerte und Meilensteine" value={settings.showBests} onChange={(v) => update({ showBests: v })} />
-        </Section>
-      </Card>
+      </Collapsible>
 
-      <Card className="mb-4">
-        <Section
-          title="Lernstand"
-          hint="Der Lernstand liegt nur auf diesem Gerät. Safari kann Website-Daten nach längerer Nichtnutzung löschen – sichere ihn ab und zu als Datei (z. B. in iCloud Drive)."
-        >
-          <div className="flex flex-col gap-2">
-            <button onClick={doExport} className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-indigo-600 border-2 border-indigo-400 text-white font-bold active:scale-95 transition-transform">
-              <Download className="w-5 h-5" /> Exportieren
-            </button>
-            <button onClick={() => fileRef.current?.click()} className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-950 border-2 border-slate-800 font-bold active:scale-95 transition-transform">
-              <Upload className="w-5 h-5" /> Importieren
-            </button>
-            <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={onFile} />
-            <button onClick={() => setConfirmReset(true)} className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-950 border-2 border-slate-800 text-slate-400 font-bold active:scale-95 transition-transform">
-              <RotateCcw className="w-5 h-5" /> Zurücksetzen
-            </button>
-          </div>
-          {data.progress.lastExport && (
-            <p className="text-xs text-slate-500 mt-2">Zuletzt exportiert: {new Date(data.progress.lastExport).toLocaleDateString('de-DE')}</p>
-          )}
-        </Section>
+      <Collapsible
+        title="Motivation"
+        icon={Trophy}
+        summary={`Tagesziel ${settings.showGoals ? 'an' : 'aus'} · Bestwerte ${settings.showBests ? 'an' : 'aus'}`}
+      >
+        <Toggle label="Tagesziel und Übungskalender" value={settings.showGoals} onChange={(v) => update({ showGoals: v })} />
+        <Toggle label="Bestwerte und Meilensteine" value={settings.showBests} onChange={(v) => update({ showBests: v })} />
+      </Collapsible>
 
-        {message && <p className={`text-sm font-bold mb-4 ${message.ok ? 'text-emerald-400' : 'text-orange-400'}`}>{message.text}</p>}
+      <Collapsible
+        title="Lernstand"
+        icon={HardDrive}
+        defaultOpen={!!(pendingImport || confirmReset)}
+        summary={lastExport ? `Zuletzt exportiert am ${lastExport}` : 'Noch nicht exportiert – Sicherung empfohlen'}
+      >
+        <p className="text-xs text-slate-500 mb-3">
+          Der Lernstand liegt nur auf diesem Gerät. Safari kann Website-Daten nach längerer Nichtnutzung löschen – sichere ihn ab und zu als Datei (z. B. in iCloud Drive).
+        </p>
+        <div className="flex flex-col gap-2">
+          <button onClick={doExport} className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-indigo-600 border-2 border-indigo-400 text-white font-bold active:scale-95 transition-transform">
+            <Download className="w-5 h-5" /> Exportieren
+          </button>
+          <button onClick={() => fileRef.current?.click()} className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-950 border-2 border-slate-800 font-bold active:scale-95 transition-transform">
+            <Upload className="w-5 h-5" /> Importieren
+          </button>
+          <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={onFile} />
+          <button onClick={() => setConfirmReset(true)} className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-950 border-2 border-slate-800 text-slate-400 font-bold active:scale-95 transition-transform">
+            <RotateCcw className="w-5 h-5" /> Zurücksetzen
+          </button>
+        </div>
+
+        {message && <p className={`text-sm font-bold mt-3 ${message.ok ? 'text-emerald-400' : 'text-orange-400'}`}>{message.text}</p>}
 
         {pendingImport && (
-          <div className="rounded-2xl border-2 border-indigo-400 p-4 mb-4">
+          <div className="rounded-2xl border-2 border-indigo-400 p-4 mt-3">
             <p className="font-bold mb-1">Lernstand ersetzen?</p>
             <p className="text-sm text-slate-400 mb-3">
               Die Datei vom {pendingImport.exportedAt ? new Date(pendingImport.exportedAt).toLocaleDateString('de-DE') : '–'} ersetzt den Lernstand und die Einstellungen auf diesem Gerät.
@@ -250,7 +279,7 @@ export function SettingsView({ settings, update, data, setData, onBack, onPrivac
         )}
 
         {confirmReset && (
-          <div className="rounded-2xl border-2 border-orange-500 p-4 mb-4">
+          <div className="rounded-2xl border-2 border-orange-500 p-4 mt-3">
             <p className="font-bold mb-1">Lernstand wirklich löschen?</p>
             <p className="text-sm text-slate-400 mb-3">Alle Positionen, Übungstage, Bestwerte und Meilensteine werden auf diesem Gerät gelöscht. Einstellungen bleiben. Tipp: vorher exportieren.</p>
             <div className="flex gap-2">
@@ -270,11 +299,7 @@ export function SettingsView({ settings, update, data, setData, onBack, onPrivac
             </div>
           </div>
         )}
-
-        <button onClick={onPrivacy} className="text-sm text-slate-400 underline underline-offset-2">
-          Impressum · Datenschutz
-        </button>
-      </Card>
+      </Collapsible>
     </div>
   );
 }

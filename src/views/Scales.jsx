@@ -2,7 +2,7 @@
 // zeigt die Töne farbig mit Stufe (oder Tonname), alles andere ausgegraut.
 // Dazu die Übung „Stufen finden“: „Spiel die 6 in G-Dur auf der D-Saite“.
 import React, { useState, useRef, useEffect } from 'react';
-import { Music, Check, X, Target, ArrowRightLeft } from 'lucide-react';
+import { Music, Check, X, Target, ArrowRightLeft, SlidersHorizontal } from 'lucide-react';
 import { pcName } from '../lib/notes.js';
 import { getTuning } from '../lib/tunings.js';
 import { stringName } from '../lib/fretboard.js';
@@ -13,7 +13,7 @@ import {
 } from '../lib/scales.js';
 import { startMic } from '../audio/mic.js';
 import { useMicStatus } from '../ui/hooks.js';
-import { Card, Header, MicGate, Segmented, Split, namesOf } from '../ui/common.jsx';
+import { Card, Header, MicGate, Segmented, Split, Collapsible, SelectField, namesOf } from '../ui/common.jsx';
 import { Fretboard, MicAnswer, TapAnswer } from '../ui/board.jsx';
 
 // Einfarbig (Standard): Muster auf einen Blick – alle Töne gleich, nur der Grundton hebt sich ab
@@ -35,19 +35,6 @@ const SCALE_GROUPS = [
   { label: 'Pentatonik & Blues', ids: ['pent-major', 'pent-minor', 'blues'] },
   { label: 'Kirchentonarten', ids: ['dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian'] },
 ];
-
-function Chip({ active, onClick, children, className = '' }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-3 py-2 rounded-xl border-2 text-sm font-bold transition-colors ${
-        active ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-950 border-slate-800 text-slate-300'
-      } ${className}`}
-    >
-      {children}
-    </button>
-  );
-}
 
 export function ScalesView({ settings, update, setProgress, onBack }) {
   const tuning = getTuning(settings.tuningId, settings.stringCount);
@@ -89,105 +76,68 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
     );
   }
 
+  const labelName = { degree: 'Stufen', note: 'Tonnamen', none: 'ohne Beschriftung' }[labels];
+
   return (
     <div>
       <Header title="Tonarten" onBack={onBack} />
 
-      <Card className="mb-4">
-        <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-2">Grundton</p>
-        <div className="grid grid-cols-6 gap-1.5 mb-4">
+      {/* Auswahl kompakt: auf dem iPhone öffnet sich die Auswahl-Walze */}
+      <div className="grid grid-cols-[6rem_1fr] landscape:grid-cols-[8rem_16rem] gap-2 mb-3">
+        <SelectField label="Grundton" value={rootPc} onChange={(v) => choose({ scaleRoot: Number(v) })}>
           {Array.from({ length: 12 }, (_, p) => (
-            <button
-              key={p}
-              onClick={() => choose({ scaleRoot: p })}
-              className={`py-2 rounded-xl border-2 font-black ${pcName(p, { ...names, accidentals: 'both' }).length > 3 ? 'text-[11px]' : 'text-base'} ${
-                p === rootPc ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-950 border-slate-800 text-slate-300'
-              }`}
-            >
+            <option key={p} value={p}>
               {pcName(p, { ...names, accidentals: 'both' })}
-            </button>
+            </option>
           ))}
-        </div>
-        {SCALE_GROUPS.map((g) => (
-          <div key={g.label} className="mb-3">
-            <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-2">{g.label}</p>
-            <div className="flex flex-wrap gap-1.5">
+        </SelectField>
+        <SelectField label="Tonart" value={scale.id} onChange={(v) => choose({ scaleId: v })}>
+          {SCALE_GROUPS.map((g) => (
+            <optgroup key={g.label} label={g.label}>
               {g.ids.map((id) => (
-                <Chip key={id} active={scale.id === id} onClick={() => choose({ scaleId: id })}>
+                <option key={id} value={id}>
                   {getScale(id).name}
-                </Chip>
+                </option>
               ))}
-            </div>
-          </div>
-        ))}
-      </Card>
+            </optgroup>
+          ))}
+        </SelectField>
+      </div>
 
-      <Card className="mb-4">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div>
-            <h2 className="text-3xl font-black">{keyName(rootPc, scale, naming, prefer)}</h2>
-            <p className="text-sm text-slate-400 mt-1">
+      <Card className="p-3 mb-3">
+        <div className="flex items-start justify-between gap-2 mb-2 px-1">
+          <div className="min-w-0">
+            <h2 className="text-2xl font-black leading-tight">{keyName(rootPc, scale, naming, prefer)}</h2>
+            <p className="text-xs text-slate-400 mt-0.5">
               {sig ? (sig.count ? `${sig.count} ${sig.type}: ${sig.notes.join(', ')}` : 'keine Vorzeichen') : `${scale.steps.length} Töne`}
             </p>
           </div>
           {rel && (
             <button
               onClick={() => choose({ scaleRoot: rel.rootPc, scaleId: rel.scaleId })}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 border-2 border-slate-800 text-sm font-bold text-slate-300 flex-shrink-0"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950 border-2 border-slate-800 text-xs font-bold text-slate-300 flex-shrink-0"
+              aria-label="Zur Paralleltonart wechseln"
             >
-              <ArrowRightLeft className="w-4 h-4" />
+              <ArrowRightLeft className="w-3.5 h-3.5" />
               {keyName(rel.rootPc, getScale(rel.scaleId), naming, prefer)}
             </button>
           )}
         </div>
         {/* Töne der Tonart: antippen blendet die Stufe auf dem Griffbrett aus/ein */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1 mb-3 px-1">
           {spelled.map((n) => {
             const off = hidden.includes(n.semis);
             return (
               <button
                 key={n.semis}
                 onClick={() => setHidden(off ? hidden.filter((x) => x !== n.semis) : [...hidden, n.semis])}
-                className={`min-w-[3rem] px-2 py-1.5 rounded-xl text-center transition-opacity ${styleFor(n.semis)} ${off ? 'opacity-25' : ''}`}
+                className={`min-w-[2.6rem] px-1.5 py-1 rounded-lg text-center transition-opacity ${styleFor(n.semis)} ${off ? 'opacity-25' : ''}`}
               >
-                <div className="text-xs font-bold leading-tight">{n.label}</div>
-                <div className="text-base font-black leading-tight">{spellName(n.letter, n.acc, naming)}</div>
+                <div className="text-[10px] font-bold leading-tight">{n.label}</div>
+                <div className="text-sm font-black leading-tight">{spellName(n.letter, n.acc, naming)}</div>
               </button>
             );
           })}
-        </div>
-        <p className="text-[11px] text-slate-500 mt-2">Antippen blendet eine Stufe aus – z. B. nur Grundtöne zeigen.</p>
-      </Card>
-
-      <button
-        onClick={() => {
-          if (settings.micExplained) startMic();
-          setQuiz(true);
-        }}
-        className="w-full py-4 mb-4 rounded-3xl bg-indigo-600 border-2 border-indigo-400 text-white font-black text-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
-      >
-        <Target className="w-6 h-6 flex-shrink-0" />
-        <span className="text-left leading-tight">
-          Üben: Stufen finden
-          <span className="block text-sm font-bold text-indigo-100">{keyName(rootPc, scale, naming, prefer)}</span>
-        </span>
-      </button>
-
-      <Card className="p-3">
-        <div className="grid grid-cols-2 landscape:grid-cols-3 gap-2 mb-3">
-          <Segmented options={[{ value: 'mono', label: 'Einfarbig' }, { value: 'degree', label: 'Stufen­farben' }]} value={colors} onChange={(v) => update({ scaleColors: v })} />
-          <Segmented options={[{ value: 12, label: 'bis 12' }, { value: 24, label: 'bis 24' }]} value={range} onChange={setRange} />
-          <div className="col-span-2 landscape:col-span-1">
-            <Segmented
-              options={[
-                { value: 'degree', label: 'Stufen' },
-                { value: 'note', label: 'Töne' },
-                { value: 'none', label: 'Ohne' },
-              ]}
-              value={labels}
-              onChange={setLabels}
-            />
-          </div>
         </div>
         <Fretboard
           strings={strings}
@@ -205,7 +155,7 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
             };
           }}
         />
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 mt-3">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 mt-3 px-1">
           {(colors === 'mono'
             ? [
                 [MONO_STYLE.root, 'Grundton'],
@@ -223,8 +173,39 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
               {l}
             </span>
           ))}
+          <span className="text-slate-500">· Töne oben antippen blendet sie aus</span>
         </div>
       </Card>
+
+      <Collapsible title="Anzeige" icon={SlidersHorizontal} summary={`${colors === 'mono' ? 'Einfarbig' : 'Stufenfarben'} · ${labelName} · bis Bund ${range}`}>
+        <div className="space-y-2">
+          <Segmented options={[{ value: 'mono', label: 'Einfarbig' }, { value: 'degree', label: 'Stufenfarben' }]} value={colors} onChange={(v) => update({ scaleColors: v })} />
+          <Segmented
+            options={[
+              { value: 'degree', label: 'Stufen' },
+              { value: 'note', label: 'Töne' },
+              { value: 'none', label: 'Ohne' },
+            ]}
+            value={labels}
+            onChange={setLabels}
+          />
+          <Segmented options={[{ value: 12, label: 'bis Bund 12' }, { value: 24, label: 'bis Bund 24' }]} value={range} onChange={setRange} />
+        </div>
+      </Collapsible>
+
+      <button
+        onClick={() => {
+          if (settings.micExplained) startMic();
+          setQuiz(true);
+        }}
+        className="w-full py-4 rounded-3xl bg-indigo-600 border-2 border-indigo-400 text-white font-black text-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
+      >
+        <Target className="w-6 h-6 flex-shrink-0" />
+        <span className="text-left leading-tight">
+          Üben: Stufen finden
+          <span className="block text-sm font-bold text-indigo-100">{keyName(rootPc, scale, naming, prefer)}</span>
+        </span>
+      </button>
     </div>
   );
 }

@@ -71,3 +71,8 @@ body {
     animation: none;
   }
 }
+
+/* Reiter-Leiste: Platz für den Home-Indikator */
+.tabbar-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}

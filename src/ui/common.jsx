@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { ChevronLeft, Mic, MicOff, Pause } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronDown, ChevronRight, Mic, MicOff, Pause } from 'lucide-react';
 import { startMic, stopMic } from '../audio/mic.js';
 import { useMicStatus, useWakeLock } from './hooks.js';
 
@@ -179,5 +179,77 @@ export function Split({ left, right }) {
       <div>{left}</div>
       <div className="landscape:[&>*:first-child]:mt-0">{right}</div>
     </div>
+  );
+}
+
+/** Ausklappbarer Abschnitt; zugeklappt zeigt `summary` die aktuelle Wahl. */
+export function Collapsible({ title, summary, icon: Icon, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="bg-slate-900 border-2 border-slate-800 rounded-3xl mb-3 overflow-hidden">
+      <button onClick={() => setOpen(!open)} aria-expanded={open} className="w-full flex items-center gap-3 px-5 py-4 text-left">
+        {Icon && <Icon className="w-5 h-5 text-indigo-400 flex-shrink-0" />}
+        <span className="flex-1 min-w-0">
+          <span className="block font-black">{title}</span>
+          {!open && summary && <span className="block text-sm text-slate-400 truncate">{summary}</span>}
+        </span>
+        <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div className="px-5 pb-5">{children}</div>}
+    </div>
+  );
+}
+
+/** Kompaktes Auswahlfeld (natives select → auf dem iPhone die Auswahl-Walze). */
+export function SelectField({ label, value, onChange, children, className = '' }) {
+  return (
+    <label className={`relative block ${className}`}>
+      <span className="block text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-1">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full appearance-none bg-slate-950 border-2 border-slate-800 rounded-2xl pl-4 pr-10 py-3 font-black text-lg text-slate-100 focus:border-indigo-400 outline-none"
+      >
+        {children}
+      </select>
+      <ChevronDown className="absolute right-3 bottom-4 w-5 h-5 text-slate-400 pointer-events-none" />
+    </label>
+  );
+}
+
+/** Zeile in einer Liste (Menü „Mehr“, weitere Übungen). */
+export function ListRow({ icon: Icon, title, text, onClick }) {
+  return (
+    <button onClick={onClick} className="w-full flex items-center gap-4 px-4 py-3.5 text-left active:bg-slate-800/60 transition-colors">
+      <span className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0">
+        <Icon className="w-5 h-5" />
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="block font-black leading-tight">{title}</span>
+        {text && <span className="block text-xs text-slate-400 mt-0.5">{text}</span>}
+      </span>
+      <ChevronRight className="w-5 h-5 text-slate-500 flex-shrink-0" />
+    </button>
+  );
+}
+
+/** Reiter-Leiste unten (wie bei iPhone-Apps). tabs: [{ id, label, icon }] */
+export function TabBar({ tabs, active, onChange }) {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 bg-slate-900/95 backdrop-blur border-t-2 border-slate-800 tabbar-safe">
+      <div className="max-w-md landscape:max-w-4xl mx-auto flex">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => onChange(id)}
+            aria-current={active === id ? 'page' : undefined}
+            className={`flex-1 flex flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px] font-bold transition-colors ${active === id ? 'text-indigo-300' : 'text-slate-500'}`}
+          >
+            <Icon className="w-6 h-6" />
+            {label}
+          </button>
+        ))}
+      </div>
+    </nav>
   );
 }
