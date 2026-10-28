@@ -10,7 +10,7 @@ import { judge, validFrets } from '../lib/session.js';
 import { addPractice, fmtSec } from '../lib/stats.js';
 import { startMic } from '../audio/mic.js';
 import { useMicStatus, useWakeLock } from '../ui/hooks.js';
-import { Card, Header, MicGate, namesOf } from '../ui/common.jsx';
+import { Card, Header, MicGate, Split, namesOf } from '../ui/common.jsx';
 import { MicAnswer, TapAnswer, FeedbackBoard } from '../ui/board.jsx';
 import { TaskText, FeedbackText } from './Training.jsx';
 
@@ -159,7 +159,9 @@ export function OneNoteView({ settings, update, setProgress, onBack }) {
           );
         })}
       </div>
-      {visible && (
+      <Split
+        left={
+      visible && (
         <Card className={`py-8 ${feedback ? (feedback.correct ? 'border-emerald-500' : 'border-orange-500') : ''}`}>
           {!feedback ? (
             <TaskText task={task} strings={strings} names={names} />
@@ -167,7 +169,7 @@ export function OneNoteView({ settings, update, setProgress, onBack }) {
             <>
               <FeedbackText feedback={feedback} strings={strings} names={names} fretMax={fretMax} />
               {!feedback.correct && (
-                <div className="mt-5">
+                <div className="mt-5 landscape:hidden">
                   <FeedbackBoard
                     strings={strings}
                     fretMax={fretMax}
@@ -180,14 +182,31 @@ export function OneNoteView({ settings, update, setProgress, onBack }) {
             </>
           )}
         </Card>
-      )}
-      {inputMode === 'mic' ? (
-        <MicGate settings={settings} update={update} onTapMode={() => setInputMode('tap')}>
-          <MicAnswer settings={settings} task={task} armed={!feedback} blockMidi={lastMidi.current} onNote={answer} />
-        </MicGate>
-      ) : (
-        !feedback && <TapAnswer strings={strings} fretMax={fretMax} names={names} task={task} armed={!feedback} onNote={answer} />
-      )}
+      )
+        }
+        right={
+          <>
+            {feedback && !feedback.correct && (
+              <Card className="hidden landscape:block p-3">
+                <FeedbackBoard
+                  strings={strings}
+                  fretMax={fretMax}
+                  names={names}
+                  feedback={feedback}
+                  validFrets={validFrets(strings, feedback.task.string, feedback.task.pc, fretMax).filter((f) => f >= 1)}
+                />
+              </Card>
+            )}
+            {inputMode === 'mic' ? (
+              <MicGate settings={settings} update={update} onTapMode={() => setInputMode('tap')}>
+                <MicAnswer settings={settings} task={task} armed={!feedback} blockMidi={lastMidi.current} onNote={answer} />
+              </MicGate>
+            ) : (
+              !feedback && <TapAnswer strings={strings} fretMax={fretMax} names={names} task={task} armed={!feedback} onNote={answer} />
+            )}
+          </>
+        }
+      />
     </div>
   );
 }

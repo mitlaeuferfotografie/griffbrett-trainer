@@ -13,7 +13,7 @@ import {
 } from '../lib/scales.js';
 import { startMic } from '../audio/mic.js';
 import { useMicStatus } from '../ui/hooks.js';
-import { Card, Header, MicGate, Segmented, namesOf } from '../ui/common.jsx';
+import { Card, Header, MicGate, Segmented, Split, namesOf } from '../ui/common.jsx';
 import { Fretboard, MicAnswer, TapAnswer } from '../ui/board.jsx';
 
 const ROLE_STYLE = {
@@ -22,7 +22,6 @@ const ROLE_STYLE = {
   fifth: 'bg-amber-300 text-amber-950',
   other: 'bg-slate-500 text-white',
 };
-const OUT_STYLE = 'bg-slate-800/40 text-transparent';
 const QUIZ_LENGTH = 10;
 
 const SCALE_GROUPS = [
@@ -176,10 +175,10 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
           fretMax={range}
           names={names}
           withOpen
-          rowClass={range > 12 ? 'h-6' : 'h-8'}
+          size="md"
           cell={(s, f) => {
             const semis = degreeOf(rootPc, scale, strings[s] + f);
-            if (semis == null || hidden.includes(semis)) return { className: OUT_STYLE };
+            if (semis == null || hidden.includes(semis)) return null;
             const n = bySemis[semis];
             return {
               className: ROLE_STYLE[degreeRole(semis)],
@@ -195,7 +194,7 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
             ['other', 'übrige Stufen'],
           ].map(([k, l]) => (
             <span key={k} className="flex items-center gap-1.5">
-              <span className={`w-3 h-3 rounded ${ROLE_STYLE[k]}`} />
+              <span className={`w-3 h-3 rounded-full ${ROLE_STYLE[k]}`} />
               {l}
             </span>
           ))}
@@ -310,7 +309,9 @@ function ScaleQuiz({ settings, update, setProgress, strings, names, rootPc, scal
   return (
     <div>
       <Header title="Stufen finden" onBack={onBack} right={<span className="text-slate-400 font-bold tabular">{Math.min(results.length + 1, QUIZ_LENGTH)}/{QUIZ_LENGTH}</span>} />
-      {visible && task && (
+      <Split
+        left={
+      visible && task && (
         <Card className={`py-6 ${feedback ? (feedback.correct ? 'border-emerald-500' : 'border-orange-500') : ''}`}>
           {!feedback ? (
             <div className="text-center">
@@ -330,38 +331,59 @@ function ScaleQuiz({ settings, update, setProgress, strings, names, rootPc, scal
                 Bund {task.frets.join(' / ')}
                 {feedback.correct && feedback.rt != null ? ` · ${fmtSec(feedback.rt)}` : ''}
               </p>
-              <div className="mt-4">
+              <div className="mt-4 landscape:hidden">
                 <Fretboard
                   strings={strings}
                   fretMax={fretMax}
                   names={names}
-                  rowClass={fretMax > 12 ? 'h-3.5' : 'h-5'}
+                  highlightString={task.string}
                   cell={(s, f) => {
                     if (s === task.string && task.frets.includes(f)) return { className: ROLE_STYLE[degreeRole(task.semis)], label: degreeLabel(scale, task.semis) };
                     if (!feedback.correct && s === task.string && f === feedback.playedFret) return { className: 'bg-orange-500 text-orange-950' };
-                    return { className: s === task.string ? 'bg-slate-800' : 'bg-slate-800/30' };
+                    return null;
                   }}
                 />
               </div>
             </div>
           )}
         </Card>
-      )}
-      {inputMode === 'mic' ? (
-        <MicGate settings={settings} update={update} onTapMode={() => setInputMode('tap')}>
-          <MicAnswer settings={settings} task={task} armed={!feedback} blockMidi={lastMidi.current} onNote={answer} />
-        </MicGate>
-      ) : (
-        !feedback && <TapAnswer strings={strings} fretMax={fretMax} names={names} task={task} armed={!feedback} onNote={answer} />
-      )}
-      {visible && task && !feedback && (
-        <button onClick={() => answer(null, 0)} className="w-full mt-4 py-3 rounded-2xl bg-slate-900 border-2 border-slate-800 text-slate-400 font-bold">
-          Lösung zeigen
-        </button>
-      )}
-      <p className="text-xs text-slate-500 text-center mt-3 flex items-center justify-center gap-1.5">
-        <Music className="w-3.5 h-3.5" /> Zählt nicht im Lernstand.
-      </p>
+      )
+        }
+        right={
+          <>
+            {feedback && task && (
+              <Card className="hidden landscape:block p-3">
+                <Fretboard
+                  strings={strings}
+                  fretMax={fretMax}
+                  names={names}
+                  highlightString={task.string}
+                  cell={(s, f) => {
+                    if (s === task.string && task.frets.includes(f)) return { className: ROLE_STYLE[degreeRole(task.semis)], label: degreeLabel(scale, task.semis) };
+                    if (!feedback.correct && s === task.string && f === feedback.playedFret) return { className: 'bg-orange-500 text-orange-950' };
+                    return null;
+                  }}
+                />
+              </Card>
+            )}
+            {inputMode === 'mic' ? (
+              <MicGate settings={settings} update={update} onTapMode={() => setInputMode('tap')}>
+                <MicAnswer settings={settings} task={task} armed={!feedback} blockMidi={lastMidi.current} onNote={answer} />
+              </MicGate>
+            ) : (
+              !feedback && <TapAnswer strings={strings} fretMax={fretMax} names={names} task={task} armed={!feedback} onNote={answer} />
+            )}
+            {visible && task && !feedback && (
+              <button onClick={() => answer(null, 0)} className="w-full mt-4 py-3 rounded-2xl bg-slate-900 border-2 border-slate-800 text-slate-400 font-bold">
+                Lösung zeigen
+              </button>
+            )}
+            <p className="text-xs text-slate-500 text-center mt-3 flex items-center justify-center gap-1.5">
+              <Music className="w-3.5 h-3.5" /> Zählt nicht im Lernstand.
+            </p>
+          </>
+        }
+      />
     </div>
   );
 }

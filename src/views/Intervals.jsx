@@ -15,7 +15,7 @@ import {
 } from '../lib/intervals.js';
 import { startMic } from '../audio/mic.js';
 import { useMicStatus, useWakeLock } from '../ui/hooks.js';
-import { Card, Header, MicGate, Segmented, namesOf } from '../ui/common.jsx';
+import { Card, Header, MicGate, Segmented, Split, namesOf } from '../ui/common.jsx';
 import { Fretboard, MicAnswer, ProgressBar, Legend, STATUS_STYLE, STATUS_LABEL, fmtTime } from '../ui/board.jsx';
 
 const FEEDBACK_OK_MS = 1300;
@@ -78,14 +78,15 @@ function IntervalBoard({ strings, fretMax, names, task, feedback, onTap }) {
       strings={strings}
       fretMax={fretMax}
       names={names}
-      rowClass={fretMax > 12 ? 'h-4' : onTap ? 'h-7' : 'h-5'}
+      size={onTap ? 'lg' : 'md'}
+      highlightString={task.string}
       cell={(s, f) => {
         if (s === task.rootString && f === task.rootFret) return { className: 'bg-indigo-500 text-white', label: noteName(task.rootMidi, names) };
         if (showTarget && s === task.string && f === task.fret)
           return { className: 'bg-emerald-500 text-emerald-950', label: shapeInfo(task.semis).degree };
         if (showTarget && !feedback.correct && s === task.string && f === feedback.playedFret)
           return { className: 'bg-orange-500 text-orange-950', label: feedback.midi != null ? noteName(feedback.midi, names) : '' };
-        return { className: s === task.string ? 'bg-slate-800' : 'bg-slate-800/40' };
+        return null;
       }}
       onCell={onTap}
       enabled={(s) => s === task.string}
@@ -451,8 +452,9 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
           </div>
         </Card>
       ) : (
-        <>
-          {visible && task && (
+        <Split
+          left={
+          visible && task && (
             <Card className={`py-5 ${feedback ? (feedback.correct ? 'border-emerald-500' : 'border-orange-500') : ''}`}>
               <div className="text-center mb-4 min-h-[8.5rem]">
                 {!feedback ? (
@@ -495,6 +497,23 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
                   </div>
                 )}
               </div>
+              <div className="landscape:hidden">
+                <IntervalBoard
+                  strings={strings}
+                  fretMax={fretMax}
+                  names={names}
+                  task={task}
+                  feedback={feedback}
+                  onTap={inputMode === 'tap' && !feedback ? (s, f) => answer(strings[s] + f, performance.now() - task.shownAt, 'tap') : undefined}
+                />
+              </div>
+            </Card>
+          )
+          }
+          right={
+          <>
+          {visible && task && (
+            <Card className="hidden landscape:block p-3">
               <IntervalBoard
                 strings={strings}
                 fretMax={fretMax}
@@ -519,7 +538,9 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
             </button>
           )}
           {inputMode === 'tap' && <p className="text-xs text-slate-500 text-center mt-3">Zielbund auf der Zielsaite antippen. Antippen zählt schwächer: höchstens bis „wird“.</p>}
-        </>
+          </>
+          }
+        />
       )}
     </div>
   );

@@ -6,74 +6,160 @@ import { Card } from './common.jsx';
 
 // ==========================================
 // GRIFFBRETT
-// Vorgabe: dicke/tiefste Saite links, höchste rechts. Sattel oben, Bünde nach unten.
+// Vorgabe des Nutzers: waagerecht wie die Gitarre auf dem Schoß – Sattel links, Bünde
+// nach rechts, dicke (tiefste) Saite UNTEN, hohe E-Saite oben. Saiten als Linien (unten
+// dicker), Bundstäbchen, Lagenpunkte (3, 5, 7, 9, 12 doppelt …), Töne als Punkte.
+// Mehr als 12 Bünde werden als zwei Hälften untereinander gezeigt (0/1–12, 13–24).
 // ==========================================
 
 export const STATUS_STYLE = {
-  none: 'bg-slate-800 text-slate-500',
+  none: 'bg-slate-600',
   unsicher: 'bg-orange-500 text-orange-950',
   wird: 'bg-amber-300 text-amber-950',
   sitzt: 'bg-emerald-500 text-emerald-950',
 };
 export const STATUS_LABEL = { none: 'nicht eingeführt', unsicher: 'unsicher', wird: 'wird', sitzt: 'sitzt' };
 const MARKERS = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24];
+const DOUBLE = [12, 24];
+
+const SIZES = {
+  sm: { row: 18, dot: 15, small: 7, font: 8 },
+  md: { row: 24, dot: 20, small: 8, font: 9 },
+  lg: { row: 34, dot: 26, small: 10, font: 11 },
+};
 
 /**
- * cell(string, fret) → { className, label, ring } für Bund 1 … fretMax
- * (mit withOpen zusätzlich Bund 0 = Leersaiten über dem Sattel).
- * onCell(string, fret) macht Zellen antippbar (enabled(string, fret) schränkt ein).
+ * cell(string, fret) → null (kein Punkt) oder { className, label, ring, small }.
+ *   small: kleiner Punkt ohne Beschriftung (z. B. „nicht eingeführt“).
+ * onCell(string, fret) macht Bundfelder antippbar (enabled(string, fret) schränkt ein).
+ * withOpen: zusätzlich Bund 0 (Leersaiten) links vom Sattel.
+ * highlightString: diese Saite farbig hervorheben (z. B. die gefragte Saite).
  */
-export function Fretboard({ strings, fretMax, names, cell, onCell, enabled, rowClass = 'h-7', withOpen = false }) {
-  const cols = { gridTemplateColumns: `1.75rem repeat(${strings.length}, minmax(0, 1fr))` };
-  const rows = [];
-  for (let f = 1; f <= fretMax; f++) rows.push(f);
-  const renderRows = (list) => (
-    <div className="grid gap-1" style={cols}>
-      {list.map((f) => (
-          <React.Fragment key={f}>
-            <div
-              className={`flex items-center justify-end pr-1 text-[11px] tabular ${
-                MARKERS.includes(f) ? 'font-black text-slate-300' : 'text-slate-600'
-              } ${rowClass}`}
-            >
-              {f}
-            </div>
-            {strings.map((_, s) => {
-              const c = cell(s, f) || {};
-              const can = onCell && (!enabled || enabled(s, f));
-              const cls = `${rowClass} rounded-md flex items-center justify-center text-[11px] font-bold leading-none ${c.className || 'bg-slate-900'} ${
-                c.ring ? 'improved' : ''
-              }`;
-              return can ? (
-                <button key={s} onClick={() => onCell(s, f)} className={`${cls} active:scale-95 transition-transform`}>
-                  {c.label}
-                </button>
-              ) : (
-                <div key={s} className={cls}>
-                  {c.label}
-                </div>
-              );
-            })}
-          </React.Fragment>
-        ))}
+export function Fretboard({ strings, fretMax, names, cell, onCell, enabled, size = 'md', withOpen = false, highlightString = null }) {
+  const sz = SIZES[size] || SIZES.md;
+  const parts = fretMax > 12 ? [[withOpen ? 0 : 1, 12], [13, fretMax]] : [[withOpen ? 0 : 1, fretMax]];
+  return (
+    <div className="select-none space-y-3">
+      {parts.map(([from, to]) => (
+        <NeckPart
+          key={from}
+          strings={strings}
+          from={from}
+          to={to}
+          names={names}
+          cell={cell}
+          onCell={onCell}
+          enabled={enabled}
+          sz={sz}
+          highlightString={highlightString}
+        />
+      ))}
     </div>
   );
+}
+
+function NeckPart({ strings, from, to, names, cell, onCell, enabled, sz, highlightString }) {
+  const n = strings.length;
+  const order = strings.map((_, i) => n - 1 - i); // oberste Zeile = höchste Saite
+  const frets = [];
+  for (let f = from; f <= to; f++) frets.push(f);
+  const height = n * sz.row;
+  const hasNut = from <= 1;
+  // Bund 0 schmaler, sonst gleich breit
+  const cols = frets.map((f) => (f === 0 ? '1.4rem' : 'minmax(0, 1fr)')).join(' ');
+
+  const renderCell = (s, f, row) => {
+    const c = cell(s, f);
+    const can = onCell && (!enabled || enabled(s, f));
+    const dot =
+      c && c.className ? (
+        <span
+          className={`rounded-full flex items-center justify-center font-black leading-none shadow ${c.className} ${c.ring ? 'improved' : ''}`}
+          style={{ width: c.small ? sz.small : sz.dot, height: c.small ? sz.small : sz.dot, fontSize: sz.font }}
+        >
+          {c.small ? null : c.label}
+        </span>
+      ) : null;
+    const style = { top: row * sz.row, height: sz.row };
+    return can ? (
+      <button
+        key={s}
+        onClick={() => onCell(s, f)}
+        aria-label={`${noteName(strings[s], names)}-Saite Bund ${f}`}
+        className="absolute inset-x-0 flex items-center justify-center active:bg-indigo-400/20 rounded"
+        style={style}
+      >
+        {dot}
+      </button>
+    ) : (
+      <div key={s} className="absolute inset-x-0 flex items-center justify-center pointer-events-none" style={style}>
+        {dot}
+      </div>
+    );
+  };
+
   return (
-    <div className="select-none">
-      <div className="grid gap-1" style={cols}>
-        <div />
-        {strings.map((m, s) => (
-          <div key={s} className="text-center text-xs font-black text-slate-400">
-            {noteName(m, names)}
+    <div>
+      <div className="flex">
+        {/* Saitennamen */}
+        <div className="w-5 flex-shrink-0">
+          {order.map((s) => (
+            <div
+              key={s}
+              className={`flex items-center justify-end pr-1.5 text-[10px] font-black ${s === highlightString ? 'text-indigo-300' : 'text-slate-400'}`}
+              style={{ height: sz.row }}
+            >
+              {noteName(strings[s], names)}
+            </div>
+          ))}
+        </div>
+        <div className="relative flex-1 min-w-0">
+          {/* Saiten: unten dicker */}
+          {order.map((s, row) => {
+            const px = 1 + (1 - s / Math.max(1, n - 1)) * 2.2; // tiefste Saite ≈ 3 px, höchste 1 px
+            return (
+              <div
+                key={s}
+                className={`absolute left-0 right-0 ${s === highlightString ? 'bg-indigo-400' : 'bg-slate-500'}`}
+                style={{ top: row * sz.row + sz.row / 2 - px / 2, height: s === highlightString ? px + 1 : px }}
+              />
+            );
+          })}
+          <div className="relative grid" style={{ gridTemplateColumns: cols, height }}>
+            {frets.map((f, i) => (
+              <div
+                key={f}
+                className={`relative ${f === 0 ? '' : 'border-r-2 border-slate-600'} ${
+                  f !== 0 && i === (frets[0] === 0 ? 1 : 0) ? (hasNut ? 'border-l-[5px] border-l-slate-300' : 'border-l-2 border-l-slate-600') : ''
+                }`}
+              >
+                {/* Lagenpunkte */}
+                {MARKERS.includes(f) &&
+                  (DOUBLE.includes(f) ? (
+                    <>
+                      <span className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-slate-700" style={{ top: sz.row * (n / 2 - 1) }} />
+                      <span className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-slate-700" style={{ top: sz.row * (n / 2 + 1) }} />
+                    </>
+                  ) : (
+                    <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-slate-700" />
+                  ))}
+                {order.map((s, row) => renderCell(s, f, row))}
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
-      {withOpen && <div className="mt-1">{renderRows([0])}</div>}
-      <div className="grid gap-1 mt-1 mb-1" style={cols}>
-        <div />
-        <div className="h-1.5 rounded-full bg-slate-300" style={{ gridColumn: `span ${strings.length} / span ${strings.length}` }} />
+      {/* Bundnummern */}
+      <div className="flex mt-0.5">
+        <div className="w-5 flex-shrink-0" />
+        <div className="grid flex-1" style={{ gridTemplateColumns: cols }}>
+          {frets.map((f) => (
+            <div key={f} className={`text-center text-[9px] tabular ${MARKERS.includes(f) ? 'font-black text-slate-300' : 'text-slate-600'}`}>
+              {f}
+            </div>
+          ))}
+        </div>
       </div>
-      {renderRows(rows)}
     </div>
   );
 }
@@ -83,7 +169,7 @@ export function Legend() {
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
       {Object.keys(STATUS_STYLE).map((k) => (
         <span key={k} className="flex items-center gap-1.5">
-          <span className={`w-3 h-3 rounded ${STATUS_STYLE[k]}`} />
+          <span className={`w-3 h-3 rounded-full ${STATUS_STYLE[k]}`} />
           {STATUS_LABEL[k]}
         </span>
       ))}
@@ -182,14 +268,15 @@ export function MicAnswer({ settings, task, armed, blockMidi, onNote }) {
 /** Antippen statt spielen: nur die gefragte Saite ist aktiv. */
 export function TapAnswer({ strings, fretMax, names, task, armed, onNote }) {
   return (
-    <Card className="mt-4 p-3">
+    <Card className="mt-4 landscape:mt-0 p-3">
       <p className="text-xs text-slate-400 mb-2 text-center">Bund auf der gefragten Saite antippen</p>
       <Fretboard
         strings={strings}
         fretMax={fretMax}
         names={names}
-        rowClass={fretMax > 12 ? 'h-6' : 'h-8'}
-        cell={(s) => ({ className: s === task?.string ? 'bg-slate-700' : 'bg-slate-900 opacity-40' })}
+        size="lg"
+        highlightString={task?.string}
+        cell={() => null}
         onCell={(s, f) => armed && task && onNote(strings[s] + f, Math.max(0, performance.now() - task.shownAt), 'tap')}
         enabled={(s) => s === task?.string}
       />
@@ -205,12 +292,12 @@ export function FeedbackBoard({ strings, fretMax, names, feedback, validFrets })
       strings={strings}
       fretMax={fretMax}
       names={names}
-      rowClass={fretMax > 12 ? 'h-3.5' : 'h-5'}
+      highlightString={task.string}
       cell={(s, f) => {
-        if (s !== task.string) return { className: 'bg-slate-800/30' };
+        if (s !== task.string) return null;
         if (validFrets.includes(f)) return { className: 'bg-emerald-500 text-emerald-950', label: noteName(strings[s] + f, names) };
         if (!correct && playedFret === f) return { className: 'bg-orange-500 text-orange-950', label: noteName(strings[s] + f, names) };
-        return { className: 'bg-slate-800' };
+        return null;
       }}
     />
   );

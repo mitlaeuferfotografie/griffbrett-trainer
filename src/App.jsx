@@ -139,7 +139,7 @@ function Menu({ settings, update, progress, go, onPrivacy, onExport, onSnooze })
       <WideTile icon={Music} title="Tonarten" text="Dur, Moll, Modi, Pentatonik – ganzes Griffbrett mit Stufen" onClick={() => go('scales')} />
       <WideTile icon={ArrowDownToLine} title="Fallende Töne" text="Im richtigen Moment spielen, wird immer schneller" onClick={() => go('arcade')} />
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 landscape:grid-cols-3 gap-3">
         <Tile icon={BarChart3} title="Fortschritt" text="Heatmap, Kalender, Bestwerte" onClick={() => go('progress')} />
         <Tile icon={Layers} title="Ein Ton – alle Saiten" text="Oktav-Verbindungen" onClick={() => go('onenote')} />
         <Tile icon={Timer} title="Challenge" text="Eine Saite auf Zeit" onClick={() => go('challenge')} />
@@ -197,7 +197,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 safe-area">
-      <div className="max-w-md mx-auto">
+      <div className="max-w-md landscape:max-w-4xl mx-auto">
         {view === 'menu' && (
           <Menu
             settings={settings}

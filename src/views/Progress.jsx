@@ -101,13 +101,14 @@ export function ProgressView({ settings, progress, onBack }) {
           strings={strings}
           fretMax={settings.fretMax}
           names={names}
-          rowClass={settings.fretMax > 12 ? 'h-6' : 'h-8'}
+          size="md"
           cell={(s, f) => {
             const st = status(progress.units[`${strings[s]}:${f}`]);
             const isSel = selected && selected.s === s && selected.f === f;
             return {
-              className: `${STATUS_STYLE[st]} ${isSel ? 'outline outline-2 outline-indigo-400' : ''}`,
+              className: `${STATUS_STYLE[st]} ${isSel ? 'outline outline-2 outline-offset-1 outline-indigo-400' : ''}`,
               label: showNames ? noteName(strings[s] + f, names) : '',
+              small: st === 'none' && !isSel && !showNames,
             };
           }}
           onCell={(s, f) => setSelected(selected && selected.s === s && selected.f === f ? null : { s, f })}

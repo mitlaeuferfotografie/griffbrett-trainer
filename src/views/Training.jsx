@@ -10,7 +10,7 @@ import {
   addPractice, updateBests, evaluateMilestones, improvements, sessionSummary, todaySeconds, fmtSec,
 } from '../lib/stats.js';
 import { useMicStatus, useWakeLock } from '../ui/hooks.js';
-import { Card, Header, MicGate, namesOf } from '../ui/common.jsx';
+import { Card, Header, MicGate, Split, namesOf } from '../ui/common.jsx';
 import {
   Fretboard, FeedbackBoard, MicAnswer, TapAnswer, ProgressBar, Ring, Legend, STATUS_STYLE, STATUS_LABEL, fmtTime,
 } from '../ui/board.jsx';
@@ -269,15 +269,16 @@ export function TrainingView({ settings, update, progress, setProgress, onBack, 
           </div>
         </Card>
       ) : (
-        <>
-          {visible && task && (
+        <Split
+          left={
+          visible && task && (
             <Card className={`py-8 ${feedback ? (feedback.correct ? 'border-emerald-500' : 'border-orange-500') : ''}`}>
               {!feedback ? (
                 <TaskText task={task} strings={strings} names={names} chip={chip} />
               ) : (
                 <>
                   <FeedbackText feedback={feedback} strings={strings} names={names} fretMax={fretMax} />
-                  <div className="mt-5">
+                  <div className="mt-5 landscape:hidden">
                     <FeedbackBoard
                       strings={strings}
                       fretMax={fretMax}
@@ -288,6 +289,20 @@ export function TrainingView({ settings, update, progress, setProgress, onBack, 
                   </div>
                 </>
               )}
+            </Card>
+          )
+          }
+          right={
+          <>
+          {feedback && (
+            <Card className="hidden landscape:block p-3">
+              <FeedbackBoard
+                strings={strings}
+                fretMax={fretMax}
+                names={names}
+                feedback={feedback}
+                validFrets={validFrets(strings, feedback.task.string, feedback.task.pc, fretMax).filter((f) => f >= 1)}
+              />
             </Card>
           )}
           {inputMode === 'mic' ? (
@@ -308,7 +323,9 @@ export function TrainingView({ settings, update, progress, setProgress, onBack, 
           {inputMode === 'tap' && (
             <p className="text-xs text-slate-500 text-center mt-3">Antippen zählt im Lernstand schwächer: höchstens bis „wird“.</p>
           )}
-        </>
+          </>
+          }
+        />
       )}
     </div>
   );
@@ -406,10 +423,11 @@ function SessionSummary({ summary, settings, progress, strings, names, onAgain, 
           strings={strings}
           fretMax={settings.fretMax}
           names={names}
-          rowClass={settings.fretMax > 12 ? 'h-4' : 'h-6'}
+          size="sm"
           cell={(s, f) => {
             const key = `${strings[s]}:${f}`;
-            return { className: STATUS_STYLE[status(progress.units[key])], ring: improvedKeys.has(key) };
+            const st = status(progress.units[key]);
+            return { className: STATUS_STYLE[st], ring: improvedKeys.has(key), small: st === 'none' };
           }}
         />
         <div className="mt-3">

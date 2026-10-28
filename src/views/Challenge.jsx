@@ -10,7 +10,7 @@ import { judge } from '../lib/session.js';
 import { fmtSec } from '../lib/stats.js';
 import { startMic } from '../audio/mic.js';
 import { useMicStatus } from '../ui/hooks.js';
-import { Card, Header, MicGate, namesOf } from '../ui/common.jsx';
+import { Card, Header, MicGate, Split, namesOf } from '../ui/common.jsx';
 import { MicAnswer } from '../ui/board.jsx';
 import { TaskText } from './Training.jsx';
 
@@ -180,10 +180,14 @@ export function ChallengeView({ settings, update, progress, setProgress, onBack 
         ))}
       </div>
       <MicGate settings={settings} update={update}>
-        <Card className={`py-8 transition-colors ${miss ? 'border-orange-500' : ''}`}>
-          <TaskText task={task} strings={strings} names={names} chip={miss ? <span className="text-orange-400 font-bold">nicht {pcName(pitchClass(lastMidi.current), names)}</span> : null} />
-        </Card>
-        <MicAnswer settings={settings} task={task} armed blockMidi={lastMidi.current} onNote={onNote} />
+        <Split
+          left={
+            <Card className={`py-8 transition-colors ${miss ? 'border-orange-500' : ''}`}>
+              <TaskText task={task} strings={strings} names={names} chip={miss ? <span className="text-orange-400 font-bold">nicht {pcName(pitchClass(lastMidi.current), names)}</span> : null} />
+            </Card>
+          }
+          right={<MicAnswer settings={settings} task={task} armed blockMidi={lastMidi.current} onNote={onNote} />}
+        />
       </MicGate>
     </div>
   );

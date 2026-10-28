@@ -17,9 +17,14 @@ Privates Projekt, **nicht** auf der Übersichtsseite der Lern-Apps eingetragen.
 | Impressum & Datenschutz | fertig |
 | **Ausbaustufe 2:** Intervalle als Griff-Formen (auf- und abwärts, „Grundton zuerst“) | fertig (28.10.2026), Praxistest steht aus |
 | Tonarten-Übersicht (Griffbrett bis Bund 24) + Übung „Stufen finden“ | fertig (28.10.2026) |
+| Griffbrett waagerecht (dicke Saite unten, Punkte auf Saiten) + Querformat für Übungen | fertig (28.10.2026) |
 | Ausbaustufe 3 | Roadmap |
 
 ## Funktionen
+
+### Darstellung
+- **Griffbrett waagerecht wie die Gitarre auf dem Schoß:** Sattel links, Bünde nach rechts, **dicke Saite unten, hohe E-Saite oben**. Saiten als Linien (unten dicker), Bundstäbchen, Lagenpunkte (3, 5, 7, 9, 12 doppelt …), Töne als farbige Punkte. Bei mehr als 12 Bünden zwei Hälften untereinander (0/1–12, 13–24).
+- **Querformat:** Die Übungen (Ton finden, Ein Ton, Challenge, Intervalle, Stufen finden) zeigen quer links die Aufgabe und rechts Griffbrett und Eingabe – ideal mit dem Handy quer auf dem Notenständer. Hochformat funktioniert weiterhin.
 
 ### Start: Session „Ton finden“ (Kernübung)
 - Ein Tipp auf **Start**, Dauer 3 / 5 / 10 Minuten (Standard 5). Die App wählt jede Aufgabe selbst.
@@ -53,7 +58,7 @@ Ein Grundton wird auf dem Griffbrett gezeigt (mit Name und Saite), gefragt ist z
 
 ### Tonarten (`src/lib/scales.js`, `src/views/Scales.jsx`)
 - Grundton (12) und Tonart wählen: **Dur, Moll (natürlich), harmonisch und melodisch Moll, Dur- und Moll-Pentatonik, Blues, Dorisch, Phrygisch, Lydisch, Mixolydisch, Lokrisch**.
-- **Ganzes Griffbrett bis Bund 24** (umschaltbar auf 12) inklusive Leersaiten, dicke Saite links: Töne der Tonart farbig mit **Stufe** (oder Tonname), alles andere ausgegraut. Farben mit Bedeutung: Grundton indigo, Terz grün, Quinte gelb, übrige Stufen grau.
+- **Ganzes Griffbrett bis Bund 24** (umschaltbar auf 12) inklusive Leersaiten links vom Sattel, dicke Saite unten: Töne der Tonart farbig mit **Stufe** (oder Tonname), alles andere ausgegraut. Farben mit Bedeutung: Grundton indigo, Terz grün, Quinte gelb, übrige Stufen grau.
 - Tonart-Kopf: Name („G-Dur“, „e-Moll“, „D Dorisch“), Vorzeichen in Quintenzirkel-Reihenfolge („2 ♯: Fis, Cis“), Umschalter zur **Paralleltonart**, alle Töne mit Stufe. Antippen einer Stufe blendet sie auf dem Griffbrett aus (z. B. nur Grundtöne zeigen).
 - **Korrekte Schreibweise:** G-Dur hat Fis, F-Dur hat B; bei schwarzen Grundtönen gewinnt die Variante mit weniger Vorzeichen (Des-Dur statt Cis-Dur, fis-Moll statt ges-Moll; Gleichstand nach Vorzeichen-Einstellung).
 - **Übung „Stufen finden“**: 10 Aufgaben wie „6 in G-Dur auf der D-Saite“, Mikrofon oder Antippen, Rückmeldung mit Stufe, Tonname und Bund. Zählt nicht im Lernstand.
@@ -89,7 +94,7 @@ Töne fallen in der Spur ihrer Saite (dicke Saite links) auf eine Trefferlinie z
 - Falsch Beantwortetes kommt nach 3 anderen Aufgaben noch einmal.
 
 ### Fortschritt
-- **Heatmap** des Griffbretts im Hochformat: senkrecht, **dicke Saite links, hohe rechts**, Sattel oben. Antippen einer Position zeigt Details (Trefferquote, Ø Zeit, fällig wann). Tonnamen ein-/ausblendbar.
+- **Heatmap** des Griffbretts (waagerecht, dicke Saite unten): Status als farbige Punkte, nicht eingeführte Positionen als kleine graue Punkte. Antippen einer Position zeigt Details (Trefferquote, Ø Zeit, fällig wann). Tonnamen ein-/ausblendbar.
 - „X von Y Positionen sitzen“, Verteilung, Fortschritt bis zur nächsten Freischaltung.
 - **Übungskalender** der letzten 28 Tage („an 12 der letzten 28 Tage geübt“) und Wochenziel 4 von 7 Tagen. **Kein Streak**, der bei einem verpassten Tag auf null fällt.
 - **Bestwerte:** längste Serie richtiger Antworten, meiste Positionen „sitzt“, Ø Reaktionszeit pro Saite, Challenge-Bestzeiten.

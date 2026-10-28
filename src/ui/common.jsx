@@ -168,3 +168,16 @@ export function MicGate({ settings, update, children, onTapMode }) {
     </Card>
   );
 }
+
+/**
+ * Übungs-Layout: im Hochformat untereinander, im Querformat nebeneinander
+ * (links die Aufgabe, rechts Griffbrett/Eingabe). Der erste Abstand rechts entfällt quer.
+ */
+export function Split({ left, right }) {
+  return (
+    <div className="landscape:grid landscape:grid-cols-2 landscape:gap-4 landscape:items-start">
+      <div>{left}</div>
+      <div className="landscape:[&>*:first-child]:mt-0">{right}</div>
+    </div>
+  );
+}
