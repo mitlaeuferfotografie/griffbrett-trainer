@@ -216,7 +216,7 @@ export default function App() {
         )}
         {view === 'onenote' && <OneNoteView settings={settings} update={update} setProgress={setProgress} onBack={back} />}
         {view === 'challenge' && <ChallengeView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
-        {view === 'scales' && <ScalesView settings={settings} update={update} setProgress={setProgress} />}
+        {view === 'scales' && <ScalesView settings={settings} update={update} progress={progress} setProgress={setProgress} />}
         {view === 'intervals' && <IntervalsView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
         {view === 'arcade' && <ArcadeView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
         {view === 'progress' && <ProgressView settings={settings} progress={progress} />}

@@ -2,7 +2,7 @@
 // zeigt die Töne farbig mit Stufe (oder Tonname), alles andere ausgegraut.
 // Dazu die Übung „Stufen finden“: „Spiel die 6 in G-Dur auf der D-Saite“.
 import React, { useState, useRef, useEffect } from 'react';
-import { Music, Check, X, Target, ArrowRightLeft, SlidersHorizontal } from 'lucide-react';
+import { Music, Check, X, Target, ArrowRightLeft, SlidersHorizontal, Zap } from 'lucide-react';
 import { pcName } from '../lib/notes.js';
 import { getTuning } from '../lib/tunings.js';
 import { stringName } from '../lib/fretboard.js';
@@ -11,7 +11,9 @@ import { addPractice, fmtSec } from '../lib/stats.js';
 import {
   SCALES, getScale, spellScale, spellName, keyName, keySignature, relativeKey, degreeOf, degreeLabel, degreeRole,
 } from '../lib/scales.js';
+import { npsPattern, patternRange } from '../lib/patterns.js';
 import { startMic } from '../audio/mic.js';
+import { PatternRun } from './PatternRun.jsx';
 import { useMicStatus } from '../ui/hooks.js';
 import { Card, Header, MicGate, Segmented, Split, Collapsible, SelectField, namesOf } from '../ui/common.jsx';
 import { Fretboard, MicAnswer, TapAnswer } from '../ui/board.jsx';
@@ -21,11 +23,11 @@ const MONO_STYLE = {
   root: 'bg-amber-400 text-amber-950 ring-2 ring-amber-200',
   tone: 'bg-indigo-500 text-white',
 };
-// Stufenfarben: Grundton, Terz, Quinte hervorgehoben
+// Stufenfarben: Grundton (gleiche Farbe wie bei „Einfarbig“), Terz, Quinte hervorgehoben
 const ROLE_STYLE = {
-  root: 'bg-indigo-500 text-white',
+  root: MONO_STYLE.root,
   third: 'bg-emerald-500 text-emerald-950',
-  fifth: 'bg-amber-300 text-amber-950',
+  fifth: 'bg-sky-400 text-sky-950',
   other: 'bg-slate-500 text-white',
 };
 const QUIZ_LENGTH = 10;
@@ -36,7 +38,7 @@ const SCALE_GROUPS = [
   { label: 'Kirchentonarten', ids: ['dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian'] },
 ];
 
-export function ScalesView({ settings, update, setProgress, onBack }) {
+export function ScalesView({ settings, update, progress, setProgress, onBack }) {
   const tuning = getTuning(settings.tuningId, settings.stringCount);
   const strings = tuning.strings;
   const names = namesOf(settings);
@@ -50,6 +52,12 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
   const [range, setRange] = useState(24);
   const [hidden, setHidden] = useState([]); // ausgeblendete Stufen (Halbtöne)
   const [quiz, setQuiz] = useState(false);
+  const [run, setRun] = useState(false);
+  const nps = settings.scalePattern === 3 || settings.scalePattern === 2 ? settings.scalePattern : null;
+  const [position, setPosition] = useState(0);
+  const pos = position % scale.steps.length;
+  const pattern = nps ? npsPattern(strings, rootPc, scale, nps, pos) : null;
+  const patternCells = pattern ? new Map(pattern.notes.map((n) => [`${n.string}:${n.fret}`, n])) : null;
 
   const spelled = spellScale(rootPc, scale, prefer);
   const bySemis = Object.fromEntries(spelled.map((n) => [n.semis, n]));
@@ -57,8 +65,34 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
   const rel = relativeKey(rootPc, scale);
   const choose = (patch) => {
     setHidden([]);
+    setPosition(0);
     update(patch);
   };
+
+  const patternTitle = pattern
+    ? `${keyName(rootPc, scale, naming, prefer)} · ${nps}NPS · Muster ${pos + 1} (ab Stufe ${degreeLabel(scale, scale.steps[pos])}, Bund ${patternRange(pattern).from}–${patternRange(pattern).to})`
+    : '';
+
+  if (run && pattern) {
+    return (
+      <PatternRun
+        settings={settings}
+        update={update}
+        progress={progress}
+        setProgress={setProgress}
+        strings={strings}
+        names={names}
+        tuningId={tuning.id}
+        rootPc={rootPc}
+        scale={scale}
+        nps={nps}
+        position={pos}
+        pattern={pattern}
+        title={patternTitle}
+        onBack={() => setRun(false)}
+      />
+    );
+  }
 
   if (quiz) {
     return (
@@ -139,15 +173,50 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
             );
           })}
         </div>
+        <div className="mb-3 px-1">
+          <Segmented
+            options={[
+              { value: 'all', label: 'Ganzes Griffbrett' },
+              { value: 3, label: '3NPS' },
+              { value: 2, label: '2NPS' },
+            ]}
+            value={nps || 'all'}
+            onChange={(v) => update({ scalePattern: v })}
+          />
+          {pattern && (
+            <>
+              <div className="flex gap-1.5 mt-2 overflow-x-auto pb-1">
+                {scale.steps.map((st, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setPosition(i)}
+                    className={`flex-shrink-0 min-w-[2.75rem] px-2 py-1.5 rounded-xl border-2 text-center ${
+                      i === pos ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-950 border-slate-800 text-slate-300'
+                    }`}
+                  >
+                    <div className="text-sm font-black leading-tight">{i + 1}</div>
+                    <div className="text-[10px] leading-tight opacity-80">ab {degreeLabel(scale, st)}</div>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Muster {pos + 1}: beginnt mit Stufe {degreeLabel(scale, scale.steps[pos])} auf der tiefsten Saite · Bund {patternRange(pattern).from}–{patternRange(pattern).to}
+                {nps === 3 && scale.steps.length !== 7 ? ' · 3NPS ist für siebentönige Tonleitern gedacht' : ''}
+                {nps === 2 && scale.steps.length === 7 ? ' · 2NPS passt vor allem zu Pentatoniken' : ''}
+              </p>
+            </>
+          )}
+        </div>
         <Fretboard
           strings={strings}
-          fretMax={range}
+          fretMax={pattern && patternRange(pattern).to <= 12 ? 12 : range}
           names={names}
           withOpen
           size="md"
           cell={(s, f) => {
             const semis = degreeOf(rootPc, scale, strings[s] + f);
             if (semis == null || hidden.includes(semis)) return null;
+            if (patternCells && !patternCells.has(`${s}:${f}`)) return { className: 'bg-slate-600', small: true };
             const n = bySemis[semis];
             return {
               className: styleFor(semis),
@@ -192,6 +261,24 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
           <Segmented options={[{ value: 12, label: 'bis Bund 12' }, { value: 24, label: 'bis Bund 24' }]} value={range} onChange={setRange} />
         </div>
       </Collapsible>
+
+      {pattern && (
+        <button
+          onClick={() => {
+            if (settings.micExplained) startMic();
+            setRun(true);
+          }}
+          className="w-full py-4 mb-3 rounded-3xl bg-indigo-600 border-2 border-indigo-400 text-white font-black text-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
+        >
+          <Zap className="w-6 h-6 flex-shrink-0" />
+          <span className="text-left leading-tight">
+            Üben: Muster spielen
+            <span className="block text-sm font-bold text-indigo-100">
+              {nps}NPS · Muster {pos + 1} · auf- und abwärts
+            </span>
+          </span>
+        </button>
+      )}
 
       <button
         onClick={() => {
