@@ -141,10 +141,9 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
       gate.reset();
       return;
     }
-    const answer = gate.update(u, frame.time, (m) => {
-      const r = judge(strings, target, m, fretMax);
-      return r.correct && r.playedFret >= 1;
-    });
+    // Leersaite zählt wie Bund 12 (gleiche Tonklasse auf dieser Saite); gegen Mitschwingen
+    // schützen Lautstärke-Regel (TRACKER_ANSWER) und Nachklang-Sperre
+    const answer = gate.update(u, frame.time, (m) => judge(strings, target, m, fretMax).correct);
     if (!answer) return;
     const p = (g.time - target.t0) / target.fall;
     const correct = answer.correct;
