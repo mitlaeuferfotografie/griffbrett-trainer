@@ -66,4 +66,7 @@ test('Saitennamen', () => {
   assert.equal(stringName(s7, 5, {}), 'H-Saite');
   assert.equal(stringName(s7, 1, {}), 'tiefe E-Saite');
   assert.equal(stringName(std, 4, { naming: 'int' }), 'B-Saite');
+  assert.equal(stringName(std, 0, {}, { dative: true }), 'tiefen E-Saite');
+  assert.equal(stringName(std, 5, {}, { dative: true }), 'hohen E-Saite');
+  assert.equal(stringName(std, 1, {}, { dative: true }), 'A-Saite');
 });

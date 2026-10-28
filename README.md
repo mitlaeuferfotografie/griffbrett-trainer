@@ -9,44 +9,104 @@ Privates Projekt, **nicht** auf der Übersichtsseite der Lern-Apps eingetragen.
 
 | Bereich | Status |
 |---|---|
-| Tonerkennung (YIN) + Tests mit synthetischen Signalen | fertig, Hardware-Test am iPhone läuft |
-| Stimmgerät (chromatisch, Saitenanzeige, Zielsaite, a′ 435–445 Hz) | fertig, Hardware-Test am iPhone läuft |
+| Tonerkennung (YIN) + Tests mit synthetischen Signalen | fertig, am iPhone mit Gitarre getestet (Eingangsschwelle −75 dB) |
+| Stimmgerät | fertig, weiterer Hardware-Test folgt |
 | Diagnose (Live-Werte, erkannte Töne, Selbsttest auf dem Gerät) | fertig |
-| Einstellungen (6/7 Saiten, Stimmung, Tonnamen, Vorzeichen, Referenzton, Eingangsschwelle) | fertig |
-| Impressum & Datenschutz (`LegalModal`, Fußzeile im Menü und in den Einstellungen) | fertig |
-| PWA: Manifest + Icons | fertig; Service Worker (offline) folgt mit Version 1 |
-| Trainer „Ton finden“, adaptive Wiederholung, Heatmap, Session, Gamification, Export/Import | Version 1, nach dem Hardware-Test |
+| **Version 1:** Ton finden, adaptive Wiederholung, Heatmap, Session, Gamification, Export/Import, Hell-Modus, Offline | fertig (28.10.2026), Praxistest am iPhone steht aus |
+| Impressum & Datenschutz | fertig |
+| Ausbaustufe 2 und 3 | Roadmap |
 
 ## Funktionen
 
+### Start: Session „Ton finden“ (Kernübung)
+- Ein Tipp auf **Start**, Dauer 3 / 5 / 10 Minuten (Standard 5). Die App wählt jede Aufgabe selbst.
+- Aufgabe groß, aus ca. 1 m lesbar: **„F auf der A-Saite“**. Du spielst, die App hört.
+- **Geprüft wird Tonklasse und Lage:** Der Ton muss auf genau dieser Saite im Bundbereich (0–12 bzw. 0–24) liegen. F2 statt F3 auf der A-Saite zählt also nicht. Bund 0 und 12 zählen beide.
+- Gemessen werden richtig/falsch und **Reaktionszeit** (Aufgabe sichtbar → stabil erkannter Ton).
+- Rückmeldung: „Richtig · 1,8 s“ oder „Daneben“ mit Mini-Griffbrett (Ziel grün, gespielter Bund orange), danach kommt automatisch die nächste Aufgabe. Kein Game-Over.
+- **Lösung zeigen**, wenn der Ton nicht einfällt (zählt wie ein Fehler).
+- **Pause** hält die Zeit an. Die Zeit läuft auch nur, solange das Mikrofon aktiv ist.
+- **Ohne Mikrofon** (Bahn, Mikro verweigert): Bund auf einem Griffbrett antippen. Zählt schwächer, siehe unten.
+- Gegen Fehlauslösungen: 250 ms Sperrzeit nach jeder neuen Aufgabe; ein noch klingender vorheriger Ton zählt erst nach einem neuen Anschlag.
+- Bildschirm bleibt während der Übung an (Wake Lock).
+- **Zusammenfassung** am Ende: Antworten, Trefferquote, Ø Reaktionszeit, welche Positionen besser geworden sind (auf dem Griffbrett hervorgehoben), neu freigeschaltete Saiten, neue Bestwerte und Meilensteine, Tagesziel.
+
+### Ein Ton – alle Saiten
+Ein Ton (gewählt oder zufällig) nacheinander auf allen Saiten von tief nach hoch. Trainiert die Oktav-Verbindungen. Zählt normal im Lernstand.
+
+### Challenge
+Alle natürlichen Töne einer Saite (Bund 1–12) in zufälliger Reihenfolge auf Zeit, mit Bestzeit pro Saite. Falsche Töne kosten nur Zeit. Freiwillig, nur mit Mikrofon, **zählt nicht im Lernstand**, damit Zeitdruck die adaptive Wiederholung nicht verfälscht.
+
+### Lernstand (adaptive Wiederholung, `src/lib/srs.js`)
+- **Lerneinheit = Leersaitenton × Bund** (Schlüssel z. B. `45:8` = F auf der A-Saite). 6- und 7-Saiter teilen sich so den Lernstand gemeinsamer Saiten; Drop-Saiten haben eigene Einheiten.
+- **Leitner-Boxen 0–5 mit Reaktionszeit:**
+  - richtig und ≤ 3 s → eine Box höher; ab Box 2 höchstens einmal pro Tag. **„sitzt“ (Box 3) = schnell und richtig an mindestens zwei verschiedenen Tagen.**
+  - richtig, aber langsamer → Box bleibt; über 8 s → eine Box zurück.
+  - falsch / Lösung angezeigt → zwei Boxen zurück, nie unter 1 (Fortschritt fällt nie ganz weg).
+  - Antippen statt Spielen → höchstens bis „wird“ (Box 2), nie „sitzt“; stuft nicht herab.
+  - fällig nach 0 / 0 / 1 / 3 / 7 / 14 Tagen (Box 0–5).
+- Status in der Heatmap: **nicht eingeführt / unsicher** (Box 0–1) **/ wird** (Box 2) **/ sitzt** (Box ≥ 3).
+- Leersaiten werden nicht abgefragt.
+
+### Progressive Einführung (`src/lib/curriculum.js`)
+1. Natürliche Töne auf tiefer und hoher E-Saite → 2. A-Saite → 3. D- und G-Saite → 4. H-Saite → 5. (7-Saiter) tiefe H-Saite → 6. Vorzeichen auf allen Saiten.
+- Die nächste Stufe wird **durch Können** freigeschaltet: wenn von allen freien Positionen ≥ 80 % mindestens „wird“ und ≥ 50 % „sitzt“. Freigeschaltet bleibt freigeschaltet.
+- Manuelle Auswahl der Bereiche in den Einstellungen möglich (nicht Standard).
+
+### Session-Zusammenstellung (`src/lib/session.js`)
+- Ca. **70 % fällige/schwache**, **20 % neue**, **10 % Wiederholung** von Sitzendem; zufällig, keine Position zweimal direkt hintereinander.
+- Neue Positionen kommen dazu, solange weniger als 5 Positionen „unsicher“ sind (max. 12 pro Session). Wer schnell lernt, bekommt schneller Neues; bei vielen Fehlern wird erst gefestigt.
+- Falsch Beantwortetes kommt nach 3 anderen Aufgaben noch einmal.
+
+### Fortschritt
+- **Heatmap** des Griffbretts im Hochformat: senkrecht, **dicke Saite links, hohe rechts**, Sattel oben. Antippen einer Position zeigt Details (Trefferquote, Ø Zeit, fällig wann). Tonnamen ein-/ausblendbar.
+- „X von Y Positionen sitzen“, Verteilung, Fortschritt bis zur nächsten Freischaltung.
+- **Übungskalender** der letzten 28 Tage („an 12 der letzten 28 Tage geübt“) und Wochenziel 4 von 7 Tagen. **Kein Streak**, der bei einem verpassten Tag auf null fällt.
+- **Bestwerte:** längste Serie richtiger Antworten, meiste Positionen „sitzt“, Ø Reaktionszeit pro Saite, Challenge-Bestzeiten.
+- **Meilensteine** mit Gitarrenbezug: z. B. „Tiefe E-Saite & hohe E-Saite: alle natürlichen Töne“, „A-Saite komplett“, „7. Saite gemeistert“, „Alle natürlichen Töne bis Bund 12“, „Ganzes Griffbrett bis Bund 12/24“, 10/30/100 Übungstage, 500/2000/10000 richtige Antworten.
+- Tagesziel-Ring (Minuten heute) im Menü. Alles über die Einstellungen abschaltbar.
+
 ### Stimmgerät
 - Großer Tonname mit Oktave, Abweichung in Cent, Zeiger −50 … +50 Cent; **grün nur bei ±3 Cent** („gestimmt“).
-- Saitenleiste der aktiven Stimmung: Die passende Saite leuchtet auf. Antippen legt eine **Zielsaite** fest (hilfreich, wenn eine Saite mehr als einen Halbton daneben liegt).
+- Saitenleiste der aktiven Stimmung (dicke Saite links). Antippen legt eine **Zielsaite** fest.
 - Stimmungen: Standard E (6), Drop D, 7-Saiter Standard (H-E-A-D-G-H-E), 7-Saiter Drop A. Weitere Stimmungen = neuer Eintrag in `src/lib/tunings.js`.
-- Die gewählte Stimmung gilt auch für den Trainer.
 
-### Diagnose (für den Hardware-Test)
-- Stabil erkannter Ton mit allen Positionen auf dem Griffbrett der aktiven Stimmung, Rohfrequenz, Klarheit, Pegel mit Schwelle, Messungen/s, Rechenzeit, Abtastrate.
-- Liste der zuletzt erkannten Töne (jeder Anschlag ein Eintrag).
-- **Selbsttest**: dieselben synthetischen Signale wie die Node-Tests, direkt auf dem iPhone gerechnet.
+### Diagnose
+- Stabil erkannter Ton mit allen Positionen auf dem Griffbrett, Rohfrequenz, Klarheit, Pegel mit Schwelle, Messungen/s, Rechenzeit, Abtastrate, Liste erkannter Töne.
+- **Selbsttest** mit denselben synthetischen Signalen wie die Node-Tests, direkt auf dem iPhone.
+
+### Einstellungen
+Saiten (6/7), Stimmung, Bundbereich (bis 12 / bis 24), Session-Dauer (= Tagesziel), Lernreihenfolge (automatisch/manuell), Tonnamen (deutsch H/B oder international B/B♭), Vorzeichen (♯, ♭, beide), Referenzton a′ 435–445 Hz, Eingangsschwelle, Dunkel/Hell, Motivation (Tagesziel/Kalender, Bestwerte/Meilensteine ein/aus).
+
+**Lernstand:** Exportieren (iPhone: Teilen-Menü → „In Dateien sichern“), Importieren (mit Bestätigung in der App), Zurücksetzen (mit Bestätigung in der App). Hat man mindestens zwei Sessions und seit 14 Tagen nicht exportiert, erinnert das Menü dezent an eine Sicherung („Später“ verschiebt um 14 Tage).
 
 ### Hinweise zur Erkennung
 - Unverstärkte E-Gitarre ist fürs Handy-Mikrofon sehr leise → leise über Amp/Kopfhörer-Amp oder Westerngitarre.
-- Die **Eingangsschwelle** (Einstellungen, −90 … −30 dB, Standard **−75 dB** – am iPhone mit Gitarre als bester Wert ermittelt) bestimmt, ab welchem Pegel gemessen wird. Rauschen über der Schwelle wird zusätzlich über die Klarheit der Tonhöhe ausgefiltert. Die Diagnose zeigt den Pegel live mit Schwellen-Markierung.
+- Die **Eingangsschwelle** (−90 … −30 dB, Standard **−75 dB**, am iPhone mit Gitarre als bester Wert ermittelt) bestimmt, ab welchem Pegel gemessen wird. Rauschen über der Schwelle wird zusätzlich über die Klarheit der Tonhöhe ausgefiltert.
 
 ## Technik
 
-- React 18, Tailwind CSS v3 (beim Bauen erzeugt), Icons aus `lucide-react`, Build mit esbuild. Keine Drittanbieter zur Laufzeit, Systemschrift.
+- React 18, Tailwind CSS v3 (beim Bauen erzeugt, `tailwind.config.cjs`), Icons aus `lucide-react`, Build mit esbuild. Keine Drittanbieter zur Laufzeit, Systemschrift.
 - **Hosting:** GitHub Pages über `.github/workflows/pages.yml`: `npm ci` → `npm test` → `npm run build` → Veröffentlichung von `_site/`. Schlagen die Tests fehl, wird nichts veröffentlicht.
-- **Speicherung:** localStorage (`griffbrett-trainer:v1`), nur auf dem Gerät.
+- **Speicherung:** localStorage (`griffbrett-trainer:v1`: `settings` + `progress`), nur auf dem Gerät. Exportformat: JSON mit `app: "griffbrett-trainer"`, `format: 1`.
+- **Offline / Homescreen:** `manifest.json`, Icons, Service Worker (`public/sw.js`, „Netz zuerst“: online immer die aktuelle Version, offline die zuletzt geladene; Cache-Name enthält die Build-Version). Wird nur über https registriert.
+- **Hell-Modus:** Die Slate-Farben sind CSS-Variablen; `[data-theme="light"]` dreht die Skala um. Die Klassen bleiben gleich.
 
 ### Struktur
 
 ```
 src/
-  App.jsx              Oberfläche (Menü, Stimmgerät, Diagnose, Einstellungen, Datenschutz)
-  index.js             Einstieg
-  tailwind-input.css   Tailwind + eigene Ergänzungen (Safe Area)
+  App.jsx              Menü, Navigation, Datenhaltung (settings + progress), Theme
+  index.js             Einstieg, Service-Worker-Registrierung
+  tailwind-input.css   Tailwind, Farbvariablen (dunkel/hell), Safe Area
+  views/               Training (Session + Zusammenfassung), OneNote, Challenge, Progress,
+                       Tuner, Diagnose, Settings, Legal (Impressum & Datenschutz)
+  ui/
+    common.jsx         Card, Header, Segmented, LevelMeter, MicGate (Mikrofon-Zugang)
+    board.jsx          Griffbrett (Heatmap/Antippen/Rückmeldung), Ring, Fortschrittsbalken,
+                       MicAnswer (Ton als Antwort erkennen), TapAnswer
+    hooks.js           Mikrofon-Status/-Frames, Wake Lock, Notenverfolgung
+    backup.js          Export (Teilen/Download), Datei lesen
   audio/
     pitch.js           YIN-Tonhöhenerkennung (rein rechnerisch, in Node testbar)
     fft.js             Radix-2-FFT für die Korrelation in YIN
@@ -54,12 +114,16 @@ src/
     mic.js             Mikrofon, AudioContext, Messschleife, iOS-Unterbrechungen
     synth.js           synthetische Testsignale
     selftest.js        Selbsttest (Node-Tests und Diagnose)
-  lib/
-    notes.js           Tonnamen (H/B oder B/B♭, ♯/♭/beide), Frequenz ↔ MIDI ↔ Cent
+  lib/                 (ohne React, in Node getestet; Basis für Ausbaustufe 2 und 3)
+    notes.js           Tonnamen, Frequenz ↔ MIDI ↔ Cent
     tunings.js         Stimmungs-Presets (Daten)
-    fretboard.js       Saite × Bund ↔ Ton, Saitennamen
-    storage.js         Einstellungen/Lernstand im localStorage
-public/                index.html, manifest.json, icons/
+    fretboard.js       Saite × Bund ↔ Ton, Saitennamen (auch Dativ: „auf der tiefen E-Saite“)
+    srs.js             Lerneinheiten, Leitner-Boxen mit Reaktionszeit, Fälligkeit
+    curriculum.js      Gruppen, Freischaltung, aktive Positionen
+    session.js         Aufgabenwahl, Prüflogik (Tonklasse + Lage)
+    stats.js           Übungstage, Wochenziel, Bestwerte, Meilensteine, Zusammenfassung
+    storage.js         localStorage, Export/Import
+public/                index.html, manifest.json, sw.js, icons/
 scripts/               build.mjs, serve.mjs (lokaler Server), make-icons.mjs
 tests/                 Node-Tests (node --test)
 ```
@@ -74,7 +138,7 @@ tests/                 Node-Tests (node --test)
 
 ```bash
 npm install
-npm test          # Tonerkennung, Notenverfolgung, Griffbrett-Logik
+npm test          # Tonerkennung, Notenverfolgung, Griffbrett-, Lern- und Session-Logik
 npm run build     # → _site/
 npm run serve     # http://localhost:5173 (Mikrofon geht auf localhost auch ohne https)
 npm run icons     # Icons neu erzeugen
@@ -82,16 +146,12 @@ npm run icons     # Icons neu erzeugen
 
 ## Roadmap
 
-### Version 1 (als Nächstes)
-- **Ton finden:** „F auf der A-Saite“; geprüft werden Tonklasse **und** Lage (Bund 0–12 bzw. 0–24 auf genau dieser Saite). Reaktionszeit wird gemessen. Feedback auf einem Mini-Griffbrett. Untermodus „Ein Ton – alle Saiten“. Fallback ohne Mikrofon: Bund antippen (zählt schwächer).
-- **Adaptive Wiederholung:** Lerneinheit = Saite × Bund; Leitner-Boxen mit Reaktionszeit („sitzt“ = schnell und richtig an mehreren Tagen); progressive Einführung (E-Saiten → A → D/G → H → tiefe H → Vorzeichen).
-- **Heatmap** des Griffbretts (senkrecht im Hochformat), „X von Y Positionen sitzen“, Übungskalender statt Streak.
-- **Session** 3/5/10 Minuten mit einem Tipp, Mischung fällig/neu/Wiederholung, Zusammenfassung mit sichtbarem Zuwachs, Wake Lock.
-- **Gamification, erwachsen:** Tagesziel-Ring, Bestwerte, Meilensteine, Freischaltung durch Können, optionaler Challenge-Modus. Nichts bestraft.
-- **Export/Import** des Lernstands (JSON), Zurücksetzen, Backup-Erinnerung. Hell-Modus optional. Service Worker für Offline-Nutzung.
+### Ideen nach dem Praxistest von Version 1
+- Grenzwerte (3 s „schnell“, Freischaltung 80 %/50 %, Arbeitsmenge 5) anhand echter Nutzung nachjustieren – alle als Konstanten in `srs.js`, `curriculum.js`, `session.js`.
+- Ggf. Reaktionszeit-Schwelle pro Saite/Lage anpassen (hohe Lagen brauchen länger).
 
 ### Ausbaustufe 2: Stufen & Intervalle
-Grundton setzen, Aufgaben wie „kleine Terz“, „Quinte auf der nächsthöheren Saite“, „♭7 darunter“. Lerneinheit = Intervall × Saitenwechsel. Später Dreiklänge/Arpeggien in CAGED-Formen, Tonleitern und Modes als Stufenfolgen.
+Grundton setzen, Aufgaben wie „kleine Terz“, „Quinte auf der nächsthöheren Saite“, „♭7 darunter“. Lerneinheit = Intervall × Saitenwechsel. Später Dreiklänge/Arpeggien in CAGED-Formen, Tonleitern und Modes als Stufenfolgen. Bausteine: `session.js` (Aufgabe/Prüfung), `srs.js` (Lernstand), `board.jsx` (Griffbrett).
 
 ### Ausbaustufe 3: „Was spiele ich da eigentlich?“
-Grundton wählen, frei improvisieren; die App zeigt live die gespielten Töne **als Stufen** auf dem Griffbrett (Lage aus den letzten Tönen schätzen). Auswertung: Stufenhäufigkeit, Abgleich mit Tonleitern/Modes in Klartext, daraus Übungen für Stufe 2.
+Grundton wählen, frei improvisieren; die App zeigt live die gespielten Töne **als Stufen** auf dem Griffbrett (Lage aus den letzten Tönen schätzen). Auswertung: Stufenhäufigkeit, Abgleich mit Tonleitern/Modes in Klartext, daraus Übungen für Stufe 2. Bausteine: `detector.js` (Onset + Ton), `fretboard.js` (Positionen eines Tons).

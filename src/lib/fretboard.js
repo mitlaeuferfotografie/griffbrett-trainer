@@ -32,14 +32,14 @@ export function fretsForPitchClass(strings, stringIdx, pc, fretMax = 12) {
 /**
  * Saitenname, z. B. „tiefe E-Saite“, „A-Saite“, „hohe E-Saite“.
  * Kommt eine Tonklasse mehrfach vor, heißt die tiefste „tiefe …“ und die
- * höchste Saite des Instruments „hohe …“.
+ * höchste Saite des Instruments „hohe …“. dative: „auf der tiefen E-Saite“.
  */
-export function stringName(strings, stringIdx, opts) {
+export function stringName(strings, stringIdx, opts, { dative = false } = {}) {
   const pc = pitchClass(strings[stringIdx]);
   const name = `${pcName(pc, opts)}-Saite`;
   const same = strings.map((m, i) => (pitchClass(m) === pc ? i : -1)).filter((i) => i >= 0);
   if (same.length < 2) return name;
-  if (stringIdx === same[0]) return `tiefe ${name}`;
-  if (stringIdx === strings.length - 1) return `hohe ${name}`;
+  if (stringIdx === same[0]) return `${dative ? 'tiefen' : 'tiefe'} ${name}`;
+  if (stringIdx === strings.length - 1) return `${dative ? 'hohen' : 'hohe'} ${name}`;
   return name;
 }

@@ -10,3 +10,8 @@ root.render(
     <App />
   </StrictMode>
 );
+
+// Offline-Nutzung (nur über https, also nicht beim lokalen Testen)
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}

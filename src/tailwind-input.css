@@ -2,7 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Eigene Ergänzungen (ersetzt style.css der Schwester-Apps) */
+/* Slate-Skala als Variablen (tailwind.config.cjs). Dunkel = Standard. */
+:root {
+  --slate-50: 248 250 252;
+  --slate-100: 241 245 249;
+  --slate-200: 226 232 240;
+  --slate-300: 203 213 225;
+  --slate-400: 148 163 184;
+  --slate-500: 100 116 139;
+  --slate-600: 71 85 105;
+  --slate-700: 51 65 85;
+  --slate-800: 30 41 59;
+  --slate-900: 15 23 42;
+  --slate-950: 2 6 23;
+  color-scheme: dark;
+}
+
+/* Hell-Modus: Skala umgedreht, Karten weiß */
+[data-theme='light'] {
+  --slate-50: 2 6 23;
+  --slate-100: 15 23 42;
+  --slate-200: 30 41 59;
+  --slate-300: 51 65 85;
+  --slate-400: 71 85 105;
+  --slate-500: 100 116 139;
+  --slate-600: 148 163 184;
+  --slate-700: 203 213 225;
+  --slate-800: 226 232 240;
+  --slate-900: 255 255 255;
+  --slate-950: 241 245 249;
+  color-scheme: light;
+}
+
 html,
 body {
   overscroll-behavior: none;
@@ -18,4 +49,25 @@ body {
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* kurzes Hervorheben verbesserter Positionen in der Zusammenfassung */
+@keyframes improved-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(129 140 248 / 0);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgb(129 140 248 / 0.9);
+  }
+}
+.improved {
+  animation: improved-pulse 1.4s ease-in-out 3;
+  box-shadow: 0 0 0 2px rgb(129 140 248 / 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .improved {
+    animation: none;
+  }
 }
