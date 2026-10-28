@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Minus, Plus, Download, Upload, RotateCcw, Guitar, Timer, Type, Mic, Trophy, HardDrive } from 'lucide-react';
+import { Minus, Plus, Download, Upload, RotateCcw, Guitar, Timer, Type, Mic, Trophy, HardDrive, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { getTuning, tuningsFor, tuningNotes, DEFAULT_TUNING } from '../lib/tunings.js';
 import { buildGroups, groupLabel } from '../lib/curriculum.js';
-import { parseImport, emptyProgress } from '../lib/storage.js';
+import { parseImport, emptyProgress, isStandalone, isIOS } from '../lib/storage.js';
 import { Header, Segmented, Collapsible, namesOf } from '../ui/common.jsx';
 import { exportToFile, readFileText } from '../ui/backup.js';
 
@@ -29,7 +29,7 @@ function Toggle({ label, value, onChange }) {
   );
 }
 
-export function SettingsView({ settings, update, data, setData, onBack }) {
+export function SettingsView({ settings, update, data, setData, onBack, storageStatus }) {
   const names = namesOf(settings);
   const tunings = tuningsFor(settings.stringCount);
   const tuning = getTuning(settings.tuningId, settings.stringCount);
@@ -67,6 +67,15 @@ export function SettingsView({ settings, update, data, setData, onBack }) {
 
   const accLabel = { sharp: sharpLabel, flat: flatLabel, both: `${sharpLabel}/${flatLabel}` }[settings.accidentals];
   const lastExport = data.progress.lastExport ? new Date(data.progress.lastExport).toLocaleDateString('de-DE') : null;
+  const standalone = isStandalone();
+  const persisted = storageStatus === 'persisted';
+  const safe = persisted && (standalone || !isIOS());
+  const storageText = [
+    persisted ? 'Speicher dauerhaft' : storageStatus === 'not-persisted' ? 'Speicher nicht dauerhaft' : storageStatus === 'unsupported' ? 'dauerhafter Speicher nicht verfügbar' : 'Speicher wird geprüft …',
+    isIOS() ? (standalone ? 'Home-Bildschirm-App' : 'im Safari-Tab') : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <div>
@@ -234,8 +243,21 @@ export function SettingsView({ settings, update, data, setData, onBack }) {
         title="Lernstand"
         icon={HardDrive}
         defaultOpen={!!(pendingImport || confirmReset)}
-        summary={lastExport ? `Zuletzt exportiert am ${lastExport}` : 'Noch nicht exportiert – Sicherung empfohlen'}
+        summary={`${safe ? 'Sicher gespeichert' : storageText} · ${lastExport ? `Export ${lastExport}` : 'noch nicht exportiert'}`}
       >
+        <div className={`flex items-start gap-2 rounded-2xl border-2 p-3 mb-3 ${safe ? 'border-emerald-500/60' : 'border-orange-500/60'}`}>
+          {safe ? <ShieldCheck className="w-5 h-5 text-emerald-400 flex-shrink-0" /> : <ShieldAlert className="w-5 h-5 text-orange-400 flex-shrink-0" />}
+          <div className="text-sm">
+            <p className="font-bold">{storageText}</p>
+            <p className="text-slate-400 text-xs mt-0.5">
+              {safe
+                ? 'iOS löscht den Lernstand dieser App nicht automatisch. Ein Export ab und zu schützt zusätzlich, z. B. bei Gerätewechsel.'
+                : isIOS() && !standalone
+                  ? 'Am sichersten: in Safari Teilen → „Zum Home-Bildschirm“ und die App von dort öffnen. Achtung, dort gibt es einen eigenen Speicher – vorher exportieren, dort importieren.'
+                  : 'Der Browser kann Website-Daten bei Speichermangel oder langer Nichtnutzung löschen. Exportiere den Lernstand regelmäßig.'}
+            </p>
+          </div>
+        </div>
         <p className="text-xs text-slate-500 mb-3">
           Der Lernstand liegt nur auf diesem Gerät. Safari kann Website-Daten nach längerer Nichtnutzung löschen – sichere ihn ab und zu als Datei (z. B. in iCloud Drive).
         </p>

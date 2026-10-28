@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Gauge, Activity, Settings, Play, BarChart3, Layers, Timer, HardDriveDownload, ArrowLeftToLine, Shapes, Music, Ellipsis, Shield,
+  Gauge, Activity, Settings, Play, BarChart3, Layers, Timer, HardDriveDownload, ArrowLeftToLine, Shapes, Music, Ellipsis, Shield, Smartphone,
 } from 'lucide-react';
 import { startMic } from './audio/mic.js';
 import { getTuning, tuningNotes } from './lib/tunings.js';
-import { loadData, saveData } from './lib/storage.js';
+import { loadData, saveData, isStandalone, isIOS, requestPersistence } from './lib/storage.js';
 import { todaySeconds, weekDays, WEEK_GOAL_DAYS, needsBackup } from './lib/stats.js';
 import { BUILD, namesOf, ListRow, TabBar } from './ui/common.jsx';
 import { Ring } from './ui/board.jsx';
@@ -36,6 +36,8 @@ const TAB_IDS = TABS.map((t) => t.id);
 // ==========================================
 
 function Menu({ settings, update, progress, go, onExport, onSnooze }) {
+  const showHomeHint = isIOS() && !isStandalone() && !settings.homeHintDismissed;
+  const hasProgress = Object.keys(progress.units).length > 0 || progress.totals.answers > 0;
   const names = namesOf(settings);
   const tuning = getTuning(settings.tuningId, settings.stringCount);
   const now = Date.now();
@@ -50,6 +52,35 @@ function Menu({ settings, update, progress, go, onExport, onSnooze }) {
           {tuning.label(names)} · {tuningNotes(tuning, names)} · a′ = {settings.a4} Hz
         </p>
       </div>
+
+      {showHomeHint && (
+        <div className="mb-3 p-4 rounded-3xl border-2 border-indigo-400/60 bg-slate-900">
+          <div className="flex items-start gap-3">
+            <Smartphone className="w-6 h-6 text-indigo-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-bold">Am sichersten als App vom Home-Bildschirm</p>
+              <p className="text-sm text-slate-400">
+                In Safari unten auf das Teilen-Symbol, dann „Zum Home-Bildschirm“. Dort bleibt dein Lernstand dauerhaft gespeichert und die App startet im Vollbild.
+              </p>
+              {hasProgress && (
+                <p className="text-sm text-slate-400 mt-1">
+                  Die Home-Bildschirm-App hat einen eigenen Speicher: Exportiere hier vorher deinen Lernstand und importiere ihn dort unter Mehr → Einstellungen → Lernstand.
+                </p>
+              )}
+              <div className="flex gap-2 mt-3">
+                {hasProgress && (
+                  <button onClick={onExport} className="px-4 py-2 rounded-xl bg-indigo-600 border-2 border-indigo-400 text-white font-bold text-sm">
+                    Lernstand exportieren
+                  </button>
+                )}
+                <button onClick={() => update({ homeHintDismissed: true })} className="px-4 py-2 rounded-xl bg-slate-800 border-2 border-slate-700 font-bold text-sm">
+                  Ausblenden
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {needsBackup(progress, now) && (
         <div className="mb-3 p-4 rounded-3xl border-2 border-slate-700 bg-slate-900">
@@ -159,11 +190,17 @@ export default function App() {
   const [tab, setTab] = useState('menu');
   const [runKey, setRunKey] = useState(0);
   const [privacy, setPrivacy] = useState(false);
+  const [storageStatus, setStorageStatus] = useState('unknown');
   const { settings, progress } = data;
 
   useEffect(() => {
     saveData(data);
   }, [data]);
+
+  // Dauerhaften Speicher anfordern (iOS löscht die Daten dann nicht automatisch)
+  useEffect(() => {
+    requestPersistence().then(setStorageStatus);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
@@ -222,7 +259,7 @@ export default function App() {
         {view === 'progress' && <ProgressView settings={settings} progress={progress} />}
         {view === 'tuner' && <TunerView settings={settings} update={update} onBack={back} />}
         {view === 'diagnose' && <DiagnoseView settings={settings} update={update} onBack={back} />}
-        {view === 'settings' && <SettingsView settings={settings} update={update} data={data} setData={setData} onBack={back} />}
+        {view === 'settings' && <SettingsView settings={settings} update={update} data={data} setData={setData} onBack={back} storageStatus={storageStatus} />}
       </div>
       {isTab && <TabBar tabs={TABS} active={view} onChange={(id) => go(id)} />}
       {privacy && <LegalModal onClose={() => setPrivacy(false)} />}

@@ -128,7 +128,10 @@ Saiten (6/7), Stimmung, Bundbereich (bis 12 / bis 24), Session-Dauer (= Tageszie
 
 - React 18, Tailwind CSS v3 (beim Bauen erzeugt, `tailwind.config.cjs`), Icons aus `lucide-react`, Build mit esbuild. Keine Drittanbieter zur Laufzeit, Systemschrift.
 - **Hosting:** GitHub Pages über `.github/workflows/pages.yml`: `npm ci` → `npm test` → `npm run build` → Veröffentlichung von `_site/`. Schlagen die Tests fehl, wird nichts veröffentlicht.
-- **Speicherung:** localStorage (`griffbrett-trainer:v1`: `settings` + `progress`), nur auf dem Gerät. Exportformat: JSON mit `app: "griffbrett-trainer"`, `format: 1`.
+- **Speicherung:** localStorage (`griffbrett-trainer:v1`: `settings` + `progress`), nur auf dem Gerät, ohne Konto (Entscheidung 28.10.2026: nur iPhone, kein Sync nötig).
+  - Beim Start fordert die App **dauerhaften Speicher** an (`navigator.storage.persist()`), damit iOS die Daten nicht automatisch löscht.
+  - **Home-Bildschirm-App empfohlen:** Dort gilt Safaris 7-Tage-Löschregel nicht. Läuft die App im Safari-Tab, zeigt das Menü einen Hinweis „Teilen → Zum Home-Bildschirm“. Achtung: Die Home-Bildschirm-App hat einen **eigenen Speicher** – vorhandenen Lernstand vorher exportieren und dort importieren.
+  - Status in Einstellungen → Lernstand („Speicher dauerhaft · Home-Bildschirm-App“ grün bzw. Hinweis orange). Export bleibt als zusätzliche Sicherung (Erinnerung alle 14 Tage). Exportformat: JSON mit `app: "griffbrett-trainer"`, `format: 1`.
 - **Offline / Homescreen:** `manifest.json`, Icons, Service Worker (`public/sw.js`, „Netz zuerst“: online immer die aktuelle Version, offline die zuletzt geladene; Cache-Name enthält die Build-Version). Wird nur über https registriert.
 - **Hell-Modus:** Die Slate-Farben sind CSS-Variablen; `[data-theme="light"]` dreht die Skala um. Die Klassen bleiben gleich.
 

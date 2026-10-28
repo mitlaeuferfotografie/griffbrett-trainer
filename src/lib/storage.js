@@ -25,6 +25,7 @@ export const DEFAULT_SETTINGS = {
   scaleRoot: 7, // Tonarten: zuletzt gewählter Grundton (Tonklasse, 7 = G)
   scaleId: 'major', // Tonarten: zuletzt gewählte Skala
   scalePattern: 'all', // Tonarten: 'all' (ganzes Griffbrett) | 3 (3NPS) | 2 (2NPS)
+  homeHintDismissed: false, // Hinweis „Zum Home-Bildschirm“ ausgeblendet
   scaleColors: 'mono', // Tonarten: 'mono' (einfarbig, Grundton hervorgehoben) | 'degree' (Stufenfarben)
   micExplained: false,
 };
@@ -78,4 +79,29 @@ export function parseImport(text) {
 
 export function emptyProgress() {
   return normalizeProgress(DEFAULT_PROGRESS);
+}
+
+/** Läuft die App vom Home-Bildschirm (eigenes Fenster statt Safari-Tab)? */
+export function isStandalone() {
+  if (typeof window === 'undefined') return false;
+  return window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+
+export function isIOS() {
+  if (typeof navigator === 'undefined') return false;
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+/**
+ * Bittet den Browser, die Daten dieser App nicht automatisch zu löschen.
+ * → 'persisted' | 'not-persisted' | 'unsupported'
+ */
+export async function requestPersistence() {
+  try {
+    if (!navigator.storage || !navigator.storage.persist) return 'unsupported';
+    if (await navigator.storage.persisted()) return 'persisted';
+    return (await navigator.storage.persist()) ? 'persisted' : 'not-persisted';
+  } catch {
+    return 'unsupported';
+  }
 }
