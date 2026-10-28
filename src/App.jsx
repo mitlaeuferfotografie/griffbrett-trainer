@@ -27,6 +27,7 @@ import { ImprovView } from './views/Improv.jsx';
 const TABS = [
   { id: 'menu', label: 'Üben', icon: Play },
   { id: 'scales', label: 'Tonarten', icon: Music },
+  { id: 'tuner', label: 'Stimmgerät', icon: Gauge, mic: true },
   { id: 'progress', label: 'Fortschritt', icon: BarChart3 },
   { id: 'more', label: 'Mehr', icon: Ellipsis },
 ];
@@ -172,7 +173,6 @@ function More({ go, onPrivacy }) {
     <div>
       <h1 className="text-3xl font-black tracking-tight mt-2 mb-4">Mehr</h1>
       <div className="rounded-3xl border-2 border-slate-800 bg-slate-900 overflow-hidden divide-y divide-slate-800 mb-3">
-        <ListRow icon={Gauge} title="Stimmgerät" text="Chromatisch, mit Saitenanzeige" onClick={() => go('tuner', true)} />
         <ListRow icon={Settings} title="Einstellungen" text="Instrument, Training, Anzeige, Lernstand" onClick={() => go('settings')} />
         <ListRow icon={Activity} title="Diagnose" text="Tonerkennung live prüfen, Selbsttest" onClick={() => go('diagnose', true)} />
         <ListRow icon={Shield} title="Impressum · Datenschutz" onClick={onPrivacy} />
@@ -260,11 +260,11 @@ export default function App() {
         {view === 'intervals' && <IntervalsView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
         {view === 'arcade' && <ArcadeView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
         {view === 'progress' && <ProgressView settings={settings} progress={progress} />}
-        {view === 'tuner' && <TunerView settings={settings} update={update} onBack={back} />}
+        {view === 'tuner' && <TunerView settings={settings} update={update} />}
         {view === 'diagnose' && <DiagnoseView settings={settings} update={update} onBack={back} />}
         {view === 'settings' && <SettingsView settings={settings} update={update} data={data} setData={setData} onBack={back} storageStatus={storageStatus} />}
       </div>
-      {isTab && <TabBar tabs={TABS} active={view} onChange={(id) => go(id)} />}
+      {isTab && <TabBar tabs={TABS} active={view} onChange={(id) => go(id, TABS.find((t) => t.id === id).mic)} />}
       {privacy && <LegalModal onClose={() => setPrivacy(false)} />}
     </div>
   );

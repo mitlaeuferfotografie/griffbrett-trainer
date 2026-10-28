@@ -23,7 +23,7 @@ Privates Projekt, **nicht** auf der Übersichtsseite der Lern-Apps eingetragen.
 ## Funktionen
 
 ### Darstellung
-- **Navigation:** Reiter-Leiste unten – **Üben** (Start, Tagesziel, weitere Übungen), **Tonarten**, **Fortschritt**, **Mehr** (Stimmgerät, Einstellungen, Diagnose, Impressum). Übungen laufen im Vollbild ohne Leiste; „Zurück“ führt zum Reiter, von dem aus sie gestartet wurden.
+- **Navigation:** Reiter-Leiste unten – **Üben** (Start, Tagesziel, weitere Übungen), **Tonarten**, **Stimmgerät** (startet das Mikrofon direkt), **Fortschritt**, **Mehr** (Einstellungen, Diagnose, Impressum). Übungen laufen im Vollbild ohne Leiste; „Zurück“ führt zum Reiter, von dem aus sie gestartet wurden.
 - **Einstellungen** in ausklappbaren Abschnitten (Instrument, Training, Tonnamen & Darstellung, Mikrofon, Motivation, Lernstand); zugeklappt zeigt jeder Abschnitt die aktuelle Wahl.
 - **Tonarten:** Grundton und Tonart als kompakte Auswahlfelder (iPhone: Auswahl-Walze), Griffbrett direkt darunter, Anzeige-Optionen ausklappbar.
 - **Griffbrett waagerecht wie die Gitarre auf dem Schoß:** Sattel links, Bünde nach rechts, **dicke Saite unten, hohe E-Saite oben**. Saiten als Linien (unten dicker), Bundstäbchen, Lagenpunkte (3, 5, 7, 9, 12 doppelt …), Töne als farbige Punkte. Bei mehr als 12 Bünden zwei Hälften untereinander (0/1–12, 13–24).
