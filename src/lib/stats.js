@@ -15,6 +15,7 @@ export const DEFAULT_PROGRESS = {
   totals: { sessions: 0, answers: 0, correct: 0, sec: 0 },
   bests: { run: 0, sitzt: 0, rtByString: {}, challenge: {}, arcade: {}, patterns: {} },
   intervals: { units: {}, unlocked: {}, names: {} }, // Ausbaustufe 2: Formen-Lernstand, freie Gruppen je Stimmung
+  caged: { units: {}, unlocked: 1 }, // CAGED-Übung: Form × Grundton, freie Gruppen
   milestones: {}, // id → { day, label }
   unlocked: {}, // tuningId → Anzahl freier Gruppen
   lastExport: null,
@@ -28,6 +29,7 @@ export function normalizeProgress(p) {
     ...(p || {}),
     totals: { ...d.totals, ...(p?.totals || {}) },
     intervals: { units: { ...(p?.intervals?.units || {}) }, unlocked: { ...(p?.intervals?.unlocked || {}) }, names: { ...(p?.intervals?.names || {}) } },
+    caged: { units: { ...(p?.caged?.units || {}) }, unlocked: p?.caged?.unlocked || 1 },
     bests: { ...d.bests, ...(p?.bests || {}), rtByString: { ...(p?.bests?.rtByString || {}) }, challenge: { ...(p?.bests?.challenge || {}) }, arcade: { ...(p?.bests?.arcade || {}) }, patterns: { ...(p?.bests?.patterns || {}) } },
   };
 }

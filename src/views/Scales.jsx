@@ -15,6 +15,7 @@ import { npsPattern, patternRange } from '../lib/patterns.js';
 import { startMic } from '../audio/mic.js';
 import { PatternRun } from './PatternRun.jsx';
 import { KeyFinder } from './KeyFinder.jsx';
+import { CagedView } from './Caged.jsx';
 import { useMicStatus } from '../ui/hooks.js';
 import { Card, Header, MicGate, Segmented, Split, Collapsible, SelectField, namesOf } from '../ui/common.jsx';
 import { Fretboard, MicAnswer, TapAnswer } from '../ui/board.jsx';
@@ -53,7 +54,7 @@ export function ScalesView({ settings, update, progress, setProgress, onBack }) 
   const [range, setRange] = useState(24);
   const [hidden, setHidden] = useState([]); // ausgeblendete Stufen (Halbtöne)
   const [quiz, setQuiz] = useState(false);
-  const [mode, setMode] = useState('show'); // 'show' | 'find'
+  const [mode, setMode] = useState('show'); // 'show' | 'caged' | 'find'
   const [finderSel, setFinderSel] = useState({}); // Tonart-Finder: "Saite:Bund" → MIDI
   const [run, setRun] = useState(false);
   const nps = settings.scalePattern === 3 || settings.scalePattern === 2 ? settings.scalePattern : null;
@@ -119,14 +120,32 @@ export function ScalesView({ settings, update, progress, setProgress, onBack }) 
     <div className="mb-3">
       <Segmented
         options={[
-          { value: 'show', label: 'Tonart anzeigen' },
-          { value: 'find', label: 'Tonart finden' },
+          { value: 'show', label: 'Anzeigen' },
+          { value: 'caged', label: 'CAGED' },
+          { value: 'find', label: 'Finden' },
         ]}
         value={mode}
         onChange={setMode}
       />
     </div>
   );
+
+  if (mode === 'caged') {
+    return (
+      <CagedView
+        settings={settings}
+        update={update}
+        progress={progress}
+        setProgress={setProgress}
+        top={
+          <>
+            <Header title="Tonarten" onBack={onBack} />
+            {modeSwitch}
+          </>
+        }
+      />
+    );
+  }
 
   if (mode === 'find') {
     return (

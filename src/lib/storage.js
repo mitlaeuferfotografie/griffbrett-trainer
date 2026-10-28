@@ -29,6 +29,9 @@ export const DEFAULT_SETTINGS = {
   improvRoot: 'auto', // Improvisieren: 'auto' oder Tonklasse
   improvDetect: 'fast', // Improvisieren: Erkennung 'fast' | 'normal'
   improvPosition: 'auto', // Improvisieren: bevorzugte Lage 'auto' | 'low' | 'mid' | 'high'
+  cagedRoot: 0, // CAGED: Grundton (Tonklasse)
+  cagedQuality: 'major', // CAGED: 'major' | 'minor'
+  cagedScale: 0, // CAGED, Schicht Tonleiter: 0 = Dur/Moll, 1 = Pentatonik
   homeHintDismissed: false, // Hinweis „Zum Home-Bildschirm“ ausgeblendet
   scaleColors: 'mono', // Tonarten: 'mono' (einfarbig, Grundton hervorgehoben) | 'degree' (Stufenfarben)
   micExplained: false,

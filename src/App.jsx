@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Gauge, Activity, Settings, Play, BarChart3, Layers, Timer, HardDriveDownload, ArrowLeftToLine, Shapes, Music, Ellipsis, Shield, Smartphone, Sparkles,
+  Gauge, Activity, Settings, Play, BarChart3, Layers, Timer, HardDriveDownload, ArrowLeftToLine, Shapes, Music, Ellipsis, Shield, Smartphone, Sparkles, Grid3x3,
 } from 'lucide-react';
 import { startMic } from './audio/mic.js';
 import { getTuning, tuningNotes } from './lib/tunings.js';
@@ -21,6 +21,7 @@ import { ArcadeView } from './views/Arcade.jsx';
 import { IntervalsView } from './views/Intervals.jsx';
 import { ScalesView } from './views/Scales.jsx';
 import { ImprovView } from './views/Improv.jsx';
+import { CagedTrainerView } from './views/CagedTrainer.jsx';
 
 // Reiter unten; alle anderen Ansichten (Übungen, Stimmgerät …) laufen ohne Reiter-Leiste
 // im Vollbild und kehren mit „Zurück“ zum Reiter zurück, von dem sie geöffnet wurden.
@@ -154,6 +155,7 @@ function Menu({ settings, update, progress, go, onExport, onSnooze }) {
           <div className="rounded-3xl border-2 border-slate-800 bg-slate-900 overflow-hidden divide-y divide-slate-800 mb-3">
             <ListRow icon={Sparkles} title="Improvisieren" text="Was spiele ich da? Live-Stufen und Auswertung" onClick={() => go('improv')} />
             <ListRow icon={Shapes} title="Intervalle" text="Griff-Formen vom Grundton aus" onClick={() => go('intervals')} />
+            <ListRow icon={Grid3x3} title="CAGED" text="Akkord in einer Form finden, Arpeggio spielen" onClick={() => go('caged')} />
             <ListRow icon={Layers} title="Ein Ton – alle Saiten" text="Oktav-Verbindungen" onClick={() => go('onenote')} />
             <ListRow icon={ArrowLeftToLine} title="Tonlauf" text="Im richtigen Moment spielen, wird schneller" onClick={() => go('arcade')} />
             <ListRow icon={Timer} title="Challenge" text="Eine Saite auf Zeit" onClick={() => go('challenge')} />
@@ -258,6 +260,7 @@ export default function App() {
         {view === 'improv' && <ImprovView settings={settings} update={update} setProgress={setProgress} onBack={back} />}
         {view === 'scales' && <ScalesView settings={settings} update={update} progress={progress} setProgress={setProgress} />}
         {view === 'intervals' && <IntervalsView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
+        {view === 'caged' && <CagedTrainerView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
         {view === 'arcade' && <ArcadeView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
         {view === 'progress' && <ProgressView settings={settings} progress={progress} />}
         {view === 'tuner' && <TunerView settings={settings} update={update} />}

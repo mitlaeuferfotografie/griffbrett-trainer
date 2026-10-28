@@ -18,6 +18,7 @@ Privates Projekt, **nicht** auf der Übersichtsseite der Lern-Apps eingetragen.
 | **Ausbaustufe 2:** Intervalle als Griff-Formen (auf- und abwärts, „Grundton zuerst“, „Zielton benennen“) | fertig (28.10.2026), Praxistest steht aus |
 | Tonarten-Übersicht (Griffbrett bis Bund 24) + Übung „Stufen finden“ | fertig (28.10.2026) |
 | Griffbrett waagerecht (dicke Saite unten, Punkte auf Saiten) + Querformat für Übungen | fertig (28.10.2026) |
+| CAGED-Ansicht (Tonarten → CAGED) + CAGED-Übung (Üben → CAGED) | fertig (28.10.2026), Praxistest steht aus |
 | **Ausbaustufe 3:** Improvisieren – Live-Stufen, Lage-Schätzung, Auswertung Tonleiter/Modus | erste Version fertig (28.10.2026), Praxistest steht aus |
 
 ## Funktionen
@@ -78,6 +79,11 @@ Ein Grundton wird auf dem Griffbrett gezeigt (mit Name und Saite), gefragt ist z
 - **Griffmuster 3NPS / 2NPS** (Umschalter über dem Griffbrett): aufeinanderfolgende Töne der Tonleiter, 3 bzw. 2 pro Saite, von der tiefsten zur höchsten Saite. **Muster 1–7** (bzw. 1–5 bei Pentatoniken) beginnen jeweils auf einer anderen Stufe der tiefsten Saite (Anzeige „ab Stufe ♭3 · Bund 8–13“). Muster-Töne als Punkte, übrige Töne der Tonleiter blass. 3NPS passt zu Dur/Moll/Modi, 2NPS zu Pentatoniken (Box-Muster). Logik: `src/lib/patterns.js`.
 - **Übung „Muster spielen“** (`src/views/PatternRun.jsx`): das gewählte Muster Ton für Ton auf- und abwärts spielen; das Mikrofon prüft die Reihenfolge, der nächste Ton ist gelb markiert, gespielte grün, falsche Töne halten nur auf. Zeit ab dem ersten richtigen Ton, Bestzeit je Muster. Zählt nicht im Lernstand.
 - **Übung „Stufen finden“**: 10 Aufgaben wie „6 in G-Dur auf der D-Saite“, Mikrofon oder Antippen, Rückmeldung mit Stufe, Tonname und Bund. Zählt nicht im Lernstand.
+
+### CAGED (, , )
+- Formen als Daten: offene Griffe C, A, G, E, D (Dur und Moll) mit Grundton und Lage-Fenster, verschoben um  Bünde. Nur für Standardstimmung (7 Saiten: obere sechs); Drop-Stimmungen bekommen einen Hinweis.
+- **Ansicht** (Reiter Tonarten, Umschalter „Anzeigen · CAGED · Finden“): Grundton + Dur/Moll, Formen in Hals-Reihenfolge (z. B. C-Dur: C 0–3, A 2–5, G 4–8, E 7–10, D 9–13). Schichten **Griff · Arpeggio · Tonleiter** (Dur/Moll oder Pentatonik im Lage-Fenster). „Alle“ färbt jede Form fest ein (Überlappung → Form, deren Griff den Ton enthält, sonst nächstgelegene Lage); Einzelform mit Stufenfarben, Rest des Halses als kleine Punkte. Arpeggio/Tonleiter einer Form über „Muster spielen“ () üben, Bestzeit in  (Schlüssel ).
+- **Übung** (Üben → CAGED): Aufgabe „D-Dur · A-Form“, Lage selbst finden, Arpeggio der Form aufwärts spielen (tiefste Lage bis Bund 15, jeder Ton einmal; doppelte Töne zählen auf der höheren Saite). Reaktionszeit = bis zum ersten richtigen Ton; Suchtöne davor zählen nicht. Richtig bei höchstens 1 Fehlton und ohne „Form zeigen“. Lerneinheit  in , Gruppen: Dur E+A → Dur C+G+D → Moll E+A → Moll C+G+D (Freischaltung 80 %/50 % wie überall).
 
 ### Tonlauf (`src/lib/arcade.js`, `src/views/Arcade.jsx`)
 Töne laufen auf ihrer Saite – waagerecht, dicke Saite unten wie auf dem Griffbrett – von rechts auf eine Trefferlinie links zu und müssen im richtigen Moment gespielt werden (wie beim Tab-Lesen).
@@ -214,9 +220,8 @@ npm run icons     # Icons neu erzeugen
 - Ggf. Reaktionszeit-Schwelle pro Saite/Lage anpassen (hohe Lagen brauchen länger).
 
 ### Ausbaustufe 2: weitere Schritte
-- Tonarten-Ansicht um **Lagen/CAGED-Fenster** erweitern (nur Bund x–y hervorheben).
 - Übung „Tonleiter in einer Lage spielen“ (Tonfolge auf- und abwärts mit Mikrofon prüfen).
-- Dreiklänge/Arpeggien in den fünf CAGED-Formen, Tonleiter-Formen (Dur, Moll, Pentatonik, Modes) als Stufenfolgen – aufbauend auf den Intervall-Formen.
+- CAGED: Rückmeldung mit Bezug zu den Intervall-Formen; beim Improvisieren die aktuelle CAGED-Form nennen; Septakkorde (maj7, 7, m7) in den Formen.
 
 _Ursprüngliche Idee:_ Grundton setzen, Aufgaben wie „kleine Terz“, „Quinte auf der nächsthöheren Saite“, „♭7 darunter“. Lerneinheit = Intervall × Saitenwechsel. Später Dreiklänge/Arpeggien in CAGED-Formen, Tonleitern und Modes als Stufenfolgen. Bausteine: `session.js` (Aufgabe/Prüfung), `srs.js` (Lernstand), `board.jsx` (Griffbrett).
 

@@ -12,9 +12,11 @@ import { useMicStatus } from '../ui/hooks.js';
 import { Card, Header, MicGate, Split } from '../ui/common.jsx';
 import { Fretboard, MicAnswer } from '../ui/board.jsx';
 
-export function PatternRun({ settings, update, progress, setProgress, strings, names, tuningId, rootPc, scale, nps, position, pattern, title, onBack }) {
+// Auch für CAGED (Arpeggio/Tonleiter einer Form): bestKey, heading und labelOf von außen.
+export function PatternRun({ settings, update, progress, setProgress, strings, names, tuningId, rootPc, scale, nps, position, pattern, title, onBack, bestKey, heading = 'Muster spielen', labelOf }) {
   const seq = patternSequence(pattern);
-  const key = patternKey(tuningId, rootPc, scale.id, nps, position);
+  const key = bestKey || patternKey(tuningId, rootPc, scale.id, nps, position);
+  const label = (n) => (labelOf ? labelOf(n) : degreeLabel(scale, n.semis));
   const best = progress.bests.patterns?.[key];
   const mic = useMicStatus();
   const [index, setIndex] = useState(0);
@@ -95,11 +97,11 @@ export function PatternRun({ settings, update, progress, setProgress, strings, n
       cell={(s, f) => {
         const n = pattern.notes.find((x) => x.string === s && x.fret === f);
         if (!n) return null;
-        const label = degreeLabel(scale, n.semis);
-        if (result) return { className: 'bg-emerald-500 text-emerald-950', label };
-        if (n === expected || (n.string === expected.string && n.fret === expected.fret)) return { className: 'bg-amber-400 text-amber-950 ring-2 ring-amber-200', label };
-        if (doneSet.has(`${s}:${f}`)) return { className: 'bg-emerald-500 text-emerald-950', label };
-        return { className: n.semis === 0 ? 'bg-indigo-400 text-white' : 'bg-indigo-500/70 text-white', label };
+        const lbl = label(n);
+        if (result) return { className: 'bg-emerald-500 text-emerald-950', label: lbl };
+        if (n === expected || (n.string === expected.string && n.fret === expected.fret)) return { className: 'bg-amber-400 text-amber-950 ring-2 ring-amber-200', label: lbl };
+        if (doneSet.has(`${s}:${f}`)) return { className: 'bg-emerald-500 text-emerald-950', label: lbl };
+        return { className: n.semis === 0 ? 'bg-indigo-400 text-white' : 'bg-indigo-500/70 text-white', label: lbl };
       }}
     />
   );
@@ -110,7 +112,7 @@ export function PatternRun({ settings, update, progress, setProgress, strings, n
   return (
     <div>
       <Header
-        title="Muster spielen"
+        title={heading}
         onBack={onBack}
         right={
           <span className="flex items-center gap-2 text-2xl font-black tabular">
@@ -142,7 +144,7 @@ export function PatternRun({ settings, update, progress, setProgress, strings, n
                   </p>
                   <p className="text-7xl font-black my-1">{noteName(expected.midi, names)}</p>
                   <p className="text-slate-300 font-bold">
-                    Stufe {degreeLabel(scale, expected.semis)} · Bund {expected.fret}
+                    Stufe {label(expected)} · Bund {expected.fret}
                   </p>
                   <p className={`h-6 mt-1 font-bold ${miss != null ? 'text-orange-400' : 'text-slate-500 text-sm'}`}>
                     {miss != null ? `nicht ${noteName(miss, names)}` : startAt == null ? 'Zeit startet mit dem ersten Ton' : ''}
