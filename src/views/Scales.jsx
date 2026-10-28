@@ -16,6 +16,12 @@ import { useMicStatus } from '../ui/hooks.js';
 import { Card, Header, MicGate, Segmented, Split, namesOf } from '../ui/common.jsx';
 import { Fretboard, MicAnswer, TapAnswer } from '../ui/board.jsx';
 
+// Einfarbig (Standard): Muster auf einen Blick – alle Töne gleich, nur der Grundton hebt sich ab
+const MONO_STYLE = {
+  root: 'bg-amber-400 text-amber-950 ring-2 ring-amber-200',
+  tone: 'bg-indigo-500 text-white',
+};
+// Stufenfarben: Grundton, Terz, Quinte hervorgehoben
 const ROLE_STYLE = {
   root: 'bg-indigo-500 text-white',
   third: 'bg-emerald-500 text-emerald-950',
@@ -51,7 +57,9 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
   const prefer = settings.accidentals === 'sharp' ? 'sharp' : 'flat';
   const rootPc = settings.scaleRoot ?? 7;
   const scale = getScale(settings.scaleId || 'major');
-  const [labels, setLabels] = useState('degree'); // 'degree' | 'note'
+  const [labels, setLabels] = useState('degree'); // 'degree' | 'note' | 'none'
+  const colors = settings.scaleColors || 'mono'; // 'mono' | 'degree'
+  const styleFor = (semis) => (colors === 'mono' ? (semis === 0 ? MONO_STYLE.root : MONO_STYLE.tone) : ROLE_STYLE[degreeRole(semis)]);
   const [range, setRange] = useState(24);
   const [hidden, setHidden] = useState([]); // ausgeblendete Stufen (Halbtöne)
   const [quiz, setQuiz] = useState(false);
@@ -140,7 +148,7 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
               <button
                 key={n.semis}
                 onClick={() => setHidden(off ? hidden.filter((x) => x !== n.semis) : [...hidden, n.semis])}
-                className={`min-w-[3rem] px-2 py-1.5 rounded-xl text-center transition-opacity ${ROLE_STYLE[degreeRole(n.semis)]} ${off ? 'opacity-25' : ''}`}
+                className={`min-w-[3rem] px-2 py-1.5 rounded-xl text-center transition-opacity ${styleFor(n.semis)} ${off ? 'opacity-25' : ''}`}
               >
                 <div className="text-xs font-bold leading-tight">{n.label}</div>
                 <div className="text-base font-black leading-tight">{spellName(n.letter, n.acc, naming)}</div>
@@ -158,16 +166,27 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
         }}
         className="w-full py-4 mb-4 rounded-3xl bg-indigo-600 border-2 border-indigo-400 text-white font-black text-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
       >
-        <Target className="w-5 h-5" /> Üben: Stufen finden in {keyName(rootPc, scale, naming, prefer)}
+        <Target className="w-6 h-6 flex-shrink-0" />
+        <span className="text-left leading-tight">
+          Üben: Stufen finden
+          <span className="block text-sm font-bold text-indigo-100">{keyName(rootPc, scale, naming, prefer)}</span>
+        </span>
       </button>
 
       <Card className="p-3">
-        <div className="flex gap-2 mb-3">
-          <div className="flex-1">
-            <Segmented options={[{ value: 'degree', label: 'Stufen' }, { value: 'note', label: 'Töne' }]} value={labels} onChange={setLabels} />
-          </div>
-          <div className="flex-1">
-            <Segmented options={[{ value: 12, label: 'bis 12' }, { value: 24, label: 'bis 24' }]} value={range} onChange={setRange} />
+        <div className="grid grid-cols-2 landscape:grid-cols-3 gap-2 mb-3">
+          <Segmented options={[{ value: 'mono', label: 'Einfarbig' }, { value: 'degree', label: 'Stufen­farben' }]} value={colors} onChange={(v) => update({ scaleColors: v })} />
+          <Segmented options={[{ value: 12, label: 'bis 12' }, { value: 24, label: 'bis 24' }]} value={range} onChange={setRange} />
+          <div className="col-span-2 landscape:col-span-1">
+            <Segmented
+              options={[
+                { value: 'degree', label: 'Stufen' },
+                { value: 'note', label: 'Töne' },
+                { value: 'none', label: 'Ohne' },
+              ]}
+              value={labels}
+              onChange={setLabels}
+            />
           </div>
         </div>
         <Fretboard
@@ -181,20 +200,26 @@ export function ScalesView({ settings, update, setProgress, onBack }) {
             if (semis == null || hidden.includes(semis)) return null;
             const n = bySemis[semis];
             return {
-              className: ROLE_STYLE[degreeRole(semis)],
-              label: labels === 'degree' ? degreeLabel(scale, semis) : spellName(n.letter, n.acc, naming),
+              className: styleFor(semis),
+              label: labels === 'degree' ? degreeLabel(scale, semis) : labels === 'note' ? spellName(n.letter, n.acc, naming) : '',
             };
           }}
         />
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 mt-3">
-          {[
-            ['root', 'Grundton'],
-            ['third', 'Terz'],
-            ['fifth', 'Quinte'],
-            ['other', 'übrige Stufen'],
-          ].map(([k, l]) => (
-            <span key={k} className="flex items-center gap-1.5">
-              <span className={`w-3 h-3 rounded-full ${ROLE_STYLE[k]}`} />
+          {(colors === 'mono'
+            ? [
+                [MONO_STYLE.root, 'Grundton'],
+                [MONO_STYLE.tone, 'Töne der Tonart'],
+              ]
+            : [
+                [ROLE_STYLE.root, 'Grundton'],
+                [ROLE_STYLE.third, 'Terz'],
+                [ROLE_STYLE.fifth, 'Quinte'],
+                [ROLE_STYLE.other, 'übrige Stufen'],
+              ]
+          ).map(([cls, l]) => (
+            <span key={l} className="flex items-center gap-1.5">
+              <span className={`w-3 h-3 rounded-full ${cls}`} />
               {l}
             </span>
           ))}

@@ -58,7 +58,7 @@ Ein Grundton wird auf dem Griffbrett gezeigt (mit Name und Saite), gefragt ist z
 
 ### Tonarten (`src/lib/scales.js`, `src/views/Scales.jsx`)
 - Grundton (12) und Tonart wählen: **Dur, Moll (natürlich), harmonisch und melodisch Moll, Dur- und Moll-Pentatonik, Blues, Dorisch, Phrygisch, Lydisch, Mixolydisch, Lokrisch**.
-- **Ganzes Griffbrett bis Bund 24** (umschaltbar auf 12) inklusive Leersaiten links vom Sattel, dicke Saite unten: Töne der Tonart farbig mit **Stufe** (oder Tonname), alles andere ausgegraut. Farben mit Bedeutung: Grundton indigo, Terz grün, Quinte gelb, übrige Stufen grau.
+- **Ganzes Griffbrett bis Bund 24** (umschaltbar auf 12) inklusive Leersaiten links vom Sattel, dicke Saite unten: Töne der Tonart als Punkte, alles andere leer. **Standard „Einfarbig“:** alle Töne indigo, nur der **Grundton gelb** – so ist das Muster der Tonleiter auf einen Blick zu sehen. Alternativ **„Stufenfarben“** (Grundton indigo, Terz grün, Quinte gelb, übrige grau). Beschriftung: Stufen, Tonnamen oder ohne (reines Muster).
 - Tonart-Kopf: Name („G-Dur“, „e-Moll“, „D Dorisch“), Vorzeichen in Quintenzirkel-Reihenfolge („2 ♯: Fis, Cis“), Umschalter zur **Paralleltonart**, alle Töne mit Stufe. Antippen einer Stufe blendet sie auf dem Griffbrett aus (z. B. nur Grundtöne zeigen).
 - **Korrekte Schreibweise:** G-Dur hat Fis, F-Dur hat B; bei schwarzen Grundtönen gewinnt die Variante mit weniger Vorzeichen (Des-Dur statt Cis-Dur, fis-Moll statt ges-Moll; Gleichstand nach Vorzeichen-Einstellung).
 - **Übung „Stufen finden“**: 10 Aufgaben wie „6 in G-Dur auf der D-Saite“, Mikrofon oder Antippen, Rückmeldung mit Stufe, Tonname und Bund. Zählt nicht im Lernstand.

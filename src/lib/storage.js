@@ -24,6 +24,7 @@ export const DEFAULT_SETTINGS = {
   intervalRootFirst: false, // Intervalle: erst Grundton, dann Intervall spielen
   scaleRoot: 7, // Tonarten: zuletzt gewählter Grundton (Tonklasse, 7 = G)
   scaleId: 'major', // Tonarten: zuletzt gewählte Skala
+  scaleColors: 'mono', // Tonarten: 'mono' (einfarbig, Grundton hervorgehoben) | 'degree' (Stufenfarben)
   micExplained: false,
 };
 
