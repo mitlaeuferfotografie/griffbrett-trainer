@@ -127,3 +127,43 @@ export function degreeRole(semis) {
   if (semis === 6 || semis === 7) return 'fifth';
   return 'other';
 }
+
+// ---------- Tonart-Finder ----------
+// Aus angetippten Tönen mögliche Tonarten bestimmen. Rangfolge: häufige Tonarten vor seltenen,
+// Grundton unter den gewählten Tönen (noch besser: als tiefster Ton/Basston), wenige zusätzliche Töne.
+
+export const COMMON_ORDER = ['major', 'minor', 'pent-minor', 'pent-major', 'blues', 'dorian', 'mixolydian', 'harmonic', 'phrygian', 'lydian', 'melodic', 'locrian'];
+
+/**
+ * pcs: gewählte Tonklassen (0–11), bassPc: Tonklasse des tiefsten gewählten Tons (oder null).
+ * Rückgabe: [{ rootPc, scale, extra: [Halbtöne über Grundton, nicht gewählt], missing: [Tonklassen nicht in der Skala], score }]
+ * Zuerst alle vollständigen Treffer, danach (nur falls zu wenige) Treffer mit genau einem fehlenden Ton.
+ */
+export function findKeys(pcs, bassPc = null, { limit = 12 } = {}) {
+  const sel = [...new Set(pcs)];
+  if (!sel.length) return [];
+  const results = [];
+  for (const id of COMMON_ORDER) {
+    const scale = getScale(id);
+    for (let r = 0; r < 12; r++) {
+      const inScale = new Set(scale.steps.map((s) => (r + s) % 12));
+      const missing = sel.filter((p) => !inScale.has(p));
+      if (missing.length > 1) continue;
+      const extra = scale.steps.filter((s) => !sel.includes((r + s) % 12));
+      // Bei wenigen Tönen passt eine Pentatonik fast immer – dann die siebentönige Tonart vorziehen
+      const fewNotesPenalty = scale.steps.length < 7 && sel.length < 4 ? 0.6 : 0;
+      const score =
+        missing.length * 10 +
+        extra.length * 0.25 +
+        COMMON_ORDER.indexOf(id) * 0.15 +
+        fewNotesPenalty +
+        (sel.includes(r) ? 0 : 1.5) +
+        (bassPc === r ? -1 : 0);
+      results.push({ rootPc: r, scale, extra, missing, score });
+    }
+  }
+  results.sort((a, b) => a.score - b.score);
+  const full = results.filter((x) => !x.missing.length);
+  const partial = results.filter((x) => x.missing.length);
+  return (full.length >= 3 ? full : [...full, ...partial]).slice(0, limit);
+}

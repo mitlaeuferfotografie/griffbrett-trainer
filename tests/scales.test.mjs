@@ -76,3 +76,33 @@ test('Stufen auf dem Griffbrett', () => {
   assert.equal(degreeRole(10), 'other');
   for (const s of SCALES) assert.equal(s.steps[0], 0);
 });
+
+import { findKeys } from '../src/lib/scales.js';
+
+test('Tonart-Finder: C-E-G mit C im Bass → C-Dur zuerst', () => {
+  const r = findKeys([0, 4, 7], 0);
+  assert.equal(r[0].rootPc, 0);
+  assert.equal(r[0].scale.id, 'major');
+  assert.ok(r.every((x) => x.missing.length === 0));
+});
+
+test('Tonart-Finder: A C D E G mit A im Bass → a-Moll-Pentatonik zuerst, a-Moll dabei', () => {
+  const r = findKeys([9, 0, 2, 4, 7], 9);
+  assert.equal(r[0].scale.id, 'pent-minor');
+  assert.equal(r[0].rootPc, 9);
+  assert.ok(r.some((x) => x.scale.id === 'minor' && x.rootPc === 9));
+  assert.ok(r.some((x) => x.scale.id === 'major' && x.rootPc === 0));
+});
+
+test('Tonart-Finder: Fis im Spiel macht G-Dur/e-Moll wahrscheinlicher als C-Dur', () => {
+  const r = findKeys([7, 11, 2, 6], 7); // G H D Fis
+  assert.equal(r[0].rootPc, 7);
+  assert.ok(!r.some((x) => x.scale.id === 'major' && x.rootPc === 0 && !x.missing.length));
+});
+
+test('Tonart-Finder: keine vollständige Tonart → Teiltreffer mit genau einem fehlenden Ton', () => {
+  const r = findKeys([0, 1, 2, 3, 4], 0); // chromatisch, passt in keine Skala
+  assert.ok(r.length > 0);
+  assert.ok(r.every((x) => x.missing.length === 1));
+  assert.deepEqual(findKeys([], null), []);
+});
