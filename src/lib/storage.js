@@ -25,6 +25,7 @@ export const DEFAULT_SETTINGS = {
   scaleRoot: 7, // Tonarten: zuletzt gewählter Grundton (Tonklasse, 7 = G)
   scaleId: 'major', // Tonarten: zuletzt gewählte Skala
   scalePattern: 'all', // Tonarten: 'all' (ganzes Griffbrett) | 3 (3NPS) | 2 (2NPS)
+  improvRoot: 'auto', // Improvisieren: 'auto' oder Tonklasse
   homeHintDismissed: false, // Hinweis „Zum Home-Bildschirm“ ausgeblendet
   scaleColors: 'mono', // Tonarten: 'mono' (einfarbig, Grundton hervorgehoben) | 'degree' (Stufenfarben)
   micExplained: false,

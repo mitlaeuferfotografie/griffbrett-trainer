@@ -34,6 +34,7 @@ Private Gitarren-App für einen erwachsenen, ausgebildeten Musiker (E-Gitarre, s
 - Abwärts-Intervalle meinen die **Stufe** in der tieferen Oktave („5 darunter“ = Quarte tiefer); Anzeige „Stufe 5 darunter · Quarte abwärts“.
 - `scales.js`: Schreibweise über Stammton + Stufennummer (nie über Tonklassen raten); bei schwarzen Grundtönen weniger Vorzeichen gewinnt. „Stufen finden“ (Tonarten) zählt nicht im Lernstand.
 - `patterns.js`: 3NPS/2NPS-Muster = aufeinanderfolgende Skalentöne, n pro Saite, Muster k startet mit Stufe k auf der tiefsten Saite (tiefste Lage, bei negativem Bund eine Oktave höher). „Muster spielen“ zählt nicht im Lernstand, Bestzeit in `bests.patterns`.
+- `analysis.js` (Ausbaustufe 3): Gewichtung nach Tondauer, Rangfolge nach Abdeckung (Gleichstand → weniger ungenutzte Stufen), Klartext-Sätze grammatisch korrekt (Dativ-Tabelle). Improvisieren zählt nicht im Lernstand.
 - Challenge und „Tonlauf“ (intern `arcade`) zählen nicht im Lernstand (Zeitdruck), nur als Übungszeit. „Ein Ton – alle Saiten“ zählt normal.
 - `arcade.js`: Fallzeit 6 s → ca. 1,5 s über 10 Stufen, +1 Stufe je 8 Treffer, −1 nach 2 verpassten in Folge, Zonen 0,6/0,85/1,15, 5 Leben.
 - Änderungen hier: Tests in `tests/learning.test.mjs`, `tests/arcade.test.mjs` bzw. `tests/intervals.test.mjs` anpassen/ergänzen.

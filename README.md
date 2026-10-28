@@ -18,7 +18,7 @@ Privates Projekt, **nicht** auf der Übersichtsseite der Lern-Apps eingetragen.
 | **Ausbaustufe 2:** Intervalle als Griff-Formen (auf- und abwärts, „Grundton zuerst“) | fertig (28.10.2026), Praxistest steht aus |
 | Tonarten-Übersicht (Griffbrett bis Bund 24) + Übung „Stufen finden“ | fertig (28.10.2026) |
 | Griffbrett waagerecht (dicke Saite unten, Punkte auf Saiten) + Querformat für Übungen | fertig (28.10.2026) |
-| Ausbaustufe 3 | Roadmap |
+| **Ausbaustufe 3:** Improvisieren – Live-Stufen, Lage-Schätzung, Auswertung Tonleiter/Modus | erste Version fertig (28.10.2026), Praxistest steht aus |
 
 ## Funktionen
 
@@ -58,6 +58,14 @@ Ein Grundton wird auf dem Griffbrett gezeigt (mit Name und Saite), gefragt ist z
 - Gleiche Lernlogik (Leitner-Boxen mit Reaktionszeit, Mischung fällig/neu/Wiederholung, Arbeitsmenge), eigener Lernstand `progress.intervals`.
 - Übersicht aller Formen (Zeilen = Intervalle, Kästchen = Saitenwechsel + Bundabstand, eingefärbt nach Status) auf der Startseite und in der Zusammenfassung.
 - Antipp-Modus: Zielbund auf der Zielsaite antippen. Meilensteine je Intervall-Gruppe.
+
+### Improvisieren – Ausbaustufe 3 (`src/lib/analysis.js`, `src/views/Improv.jsx`)
+„Was spiele ich da eigentlich?“ – frei spielen, die App hört mit.
+- **Grundton** wählen oder **automatisch** erkennen lassen (beste Passung Grundton × Tonleiter, bei Gleichstand der häufigste Ton).
+- **Live:** aktuelle Stufe groß (Grundton gelb), Stufenverteilung als Balken, Griffbrett mit der **geschätzten Lage** der letzten 8 Töne (Kandidat, der den letzten Positionen am nächsten liegt) und den übrigen möglichen Stellen blass.
+- **Auswertung in Klartext**, z. B. „Du hast überwiegend Moll-Pentatonik gespielt, mit der großen Sexte (6) als Farbton. Das klingt dorisch.“; Dur-/Moll-Charakter (Terz), Töne außerhalb (Blue Notes, chromatische Durchgänge), **nie gespielte Töne** der passenden Tonleiter; Balken und Griffbrett „gespielt / nie gespielt“.
+- Töne werden nach **Dauer gewichtet** (0,15–1,5 s), damit Durchgänge weniger zählen als gehaltene Töne. Pentatonik gilt als „überwiegend“, wenn ≥ 75 % der Töne darin liegen.
+- Aufgezeichnet werden nur erkannte Tonhöhen mit Zeitpunkt, kein Audio. Zählt nicht im Lernstand (nur Übungszeit). Einstimmig spielen; Begleitung nur über Kopfhörer.
 
 ### Tonarten (`src/lib/scales.js`, `src/views/Scales.jsx`)
 - Grundton (12) und Tonart wählen: **Dur, Moll (natürlich), harmonisch und melodisch Moll, Dur- und Moll-Pentatonik, Blues, Dorisch, Phrygisch, Lydisch, Mixolydisch, Lokrisch**.
@@ -142,7 +150,7 @@ src/
   App.jsx              Menü, Navigation, Datenhaltung (settings + progress), Theme
   index.js             Einstieg, Service-Worker-Registrierung
   tailwind-input.css   Tailwind, Farbvariablen (dunkel/hell), Safe Area
-  views/               Training (Session + Zusammenfassung), OneNote, Challenge, Arcade, Intervals, Scales, Progress,
+  views/               Training (Session + Zusammenfassung), OneNote, Challenge, Arcade, Intervals, Scales, PatternRun, Improv, Progress,
                        Tuner, Diagnose, Settings, Legal (Impressum & Datenschutz)
   ui/
     common.jsx         Card, Header, Segmented, LevelMeter, MicGate (Mikrofon-Zugang)
@@ -168,6 +176,8 @@ src/
     arcade.js          „Tonlauf“: Tempo, Timing-Zonen, Punkte, Stufen, Tonvorrat
     intervals.js       Ausbaustufe 2: Intervall-Formen (auf/ab), Einführung, Aufgaben, Prüfung
     scales.js          Tonarten/Skalen: Stufen, Schreibweise, Vorzeichen, Paralleltonart
+    patterns.js        3NPS/2NPS-Griffmuster
+    analysis.js        Ausbaustufe 3: Stufenverteilung, Skalen-Rangfolge, Klartext, Lage-Schätzung
     storage.js         localStorage, Export/Import
 public/                index.html, manifest.json, sw.js, icons/
 scripts/               build.mjs, serve.mjs (lokaler Server), make-icons.mjs
@@ -203,5 +213,8 @@ npm run icons     # Icons neu erzeugen
 
 _Ursprüngliche Idee:_ Grundton setzen, Aufgaben wie „kleine Terz“, „Quinte auf der nächsthöheren Saite“, „♭7 darunter“. Lerneinheit = Intervall × Saitenwechsel. Später Dreiklänge/Arpeggien in CAGED-Formen, Tonleitern und Modes als Stufenfolgen. Bausteine: `session.js` (Aufgabe/Prüfung), `srs.js` (Lernstand), `board.jsx` (Griffbrett).
 
-### Ausbaustufe 3: „Was spiele ich da eigentlich?“
-Grundton wählen, frei improvisieren; die App zeigt live die gespielten Töne **als Stufen** auf dem Griffbrett (Lage aus den letzten Tönen schätzen). Auswertung: Stufenhäufigkeit, Abgleich mit Tonleitern/Modes in Klartext, daraus Übungen für Stufe 2. Bausteine: `detector.js` (Onset + Ton), `fretboard.js` (Positionen eines Tons).
+### Ausbaustufe 3: weitere Schritte
+- Aus der Auswertung direkt eine Übung erzeugen („diese Töne nutzt du nie“ → Stufen finden / Intervalle mit genau diesen Stufen).
+- Drone/Grundton als Klang (über Kopfhörer), Verlauf mehrerer Improvisationen vergleichen.
+
+_Ursprüngliche Idee:_ Grundton wählen, frei improvisieren; die App zeigt live die gespielten Töne **als Stufen** auf dem Griffbrett (Lage aus den letzten Tönen schätzen). Auswertung: Stufenhäufigkeit, Abgleich mit Tonleitern/Modes in Klartext, daraus Übungen für Stufe 2. Bausteine: `detector.js` (Onset + Ton), `fretboard.js` (Positionen eines Tons).
