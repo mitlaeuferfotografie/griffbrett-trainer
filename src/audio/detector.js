@@ -22,6 +22,21 @@ export const TRACKER_DEFAULTS = {
   onsetRefractoryMs: 150,
 };
 
+/**
+ * Schnelles Profil (Improvisieren, schnelle Läufe/Riffs, auch verzerrt): kürzeres
+ * Stabilitätsfenster (2 Messungen), etwas mehr Toleranz und niedrigere Klarheitsschwelle
+ * (Verzerrung macht die Tonhöhe „unsauberer“). Zusammen mit dem kurzen Messfenster
+ * (mic.js, FAST_BUFFER_SIZE) ≈ 60–80 ms bis zur Erkennung statt ≈ 150 ms.
+ */
+export const TRACKER_FAST = {
+  stableFrames: 2,
+  toleranceCents: 50,
+  minClarity: 0.7,
+  releaseFrames: 6,
+  onsetDb: 6,
+  onsetRefractoryMs: 80,
+};
+
 export function rmsToDb(rms) {
   return rms > 0 ? 20 * Math.log10(rms) : -120;
 }

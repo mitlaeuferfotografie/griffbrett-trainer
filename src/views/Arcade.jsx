@@ -13,6 +13,7 @@ import {
   registerHit, registerMiss, registerWrong,
 } from '../lib/arcade.js';
 import { startMic } from '../audio/mic.js';
+import { createAnswerGate } from '../audio/answer.js';
 import { useMicStatus, useMicFrames, useTracker } from '../ui/hooks.js';
 import { Card, Header, MicGate, Segmented, namesOf } from '../ui/common.jsx';
 
@@ -119,14 +120,22 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
   }, [running, pool]);
 
   // Gespielte Töne
+  // Richtiger Ton zählt sofort, falscher erst nach kurzem stabilem Klang (Slides/Geräusche)
+  const gate = useMemo(() => createAnswerGate({ holdWrongMs: 250 }), []);
+
   useMicFrames((frame) => {
     const u = tracker.update(frame);
-    if (!u.event || !running || !game.current) return;
+    if (!running || !game.current) return;
     const g = game.current;
     const target = g.notes.filter((n) => n.state === 'live').sort((a, b) => a.t0 - b.t0)[0];
-    if (!target) return;
+    if (!target) {
+      gate.reset();
+      return;
+    }
+    const answer = gate.update(u, frame.time, (m) => judge(strings, target, m, fretMax).correct);
+    if (!answer) return;
     const p = (g.time - target.t0) / target.fall;
-    const correct = judge(strings, target, u.event.midi, fretMax).correct;
+    const correct = answer.correct;
     const q = rateTiming(p);
     if (correct && (q === 'good' || q === 'perfect')) {
       const before = g.run.level;
@@ -140,7 +149,7 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
       popup(g, 'zu früh', target.string, 'info');
     } else if (p >= 0.35) {
       g.run = registerWrong(g.run);
-      popup(g, `${noteName(u.event.midi, names)}?`, target.string, 'miss');
+      popup(g, `${noteName(answer.midi, names)}?`, target.string, 'miss');
     }
   });
 

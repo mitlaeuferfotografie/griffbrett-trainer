@@ -9,7 +9,8 @@ import { positionsForMidi } from '../lib/fretboard.js';
 import { degreeLabel, getScale } from '../lib/scales.js';
 import { describePlaying, degreeWeights, shares, guessRoot, estimatePosition } from '../lib/analysis.js';
 import { addPractice, fmtSec } from '../lib/stats.js';
-import { startMic } from '../audio/mic.js';
+import { startMic, setFastMode } from '../audio/mic.js';
+import { TRACKER_FAST } from '../audio/detector.js';
 import { useMicFrames, useTracker, useMicStatus } from '../ui/hooks.js';
 import { Card, Header, MicGate, Split, SelectField, namesOf } from '../ui/common.jsx';
 import { Fretboard, fmtTime } from '../ui/board.jsx';
@@ -40,7 +41,12 @@ export function ImprovView({ settings, update, setProgress, onBack }) {
   const strings = tuning.strings;
   const names = namesOf(settings);
   const mic = useMicStatus();
-  const tracker = useTracker(settings);
+  const tracker = useTracker(settings, TRACKER_FAST);
+  // schneller Modus (kurzes Messfenster) nur, solange diese Ansicht offen ist
+  useEffect(() => {
+    setFastMode(true);
+    return () => setFastMode(false);
+  }, []);
   const [rootChoice, setRootChoice] = useState(settings.improvRoot ?? 'auto');
   const [phase, setPhase] = useState('home'); // home | live | result
   const [events, setEvents] = useState([]);
@@ -76,6 +82,7 @@ export function ImprovView({ settings, update, setProgress, onBack }) {
 
   const begin = () => {
     if (settings.micExplained) startMic();
+    setFastMode(true);
     tracker.reset();
     eventsRef.current = [];
     trailRef.current = [];

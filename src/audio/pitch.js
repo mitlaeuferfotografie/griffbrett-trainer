@@ -45,6 +45,41 @@ export function createPitchDetector({
     return best;
   }
 
+  // Hann-Fenster für die gezielte Frequenzmessung (wenig Übersprechen benachbarter Töne)
+  const hann = new Float64Array(N);
+  for (let i = 0; i < N; i++) hann[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (N - 1));
+
+  // Amplitude bei einer Frequenz (Goertzel-Filter auf dem gefensterten Signal)
+  function amplitudeAt(freq) {
+    const w = (2 * Math.PI * freq) / sampleRate;
+    const c = 2 * Math.cos(w);
+    let s1 = 0;
+    let s2 = 0;
+    for (let i = 0; i < N; i++) {
+      const s0 = x[i] * hann[i] + c * s1 - s2;
+      s2 = s1;
+      s1 = s0;
+    }
+    return Math.sqrt(Math.max(0, s1 * s1 + s2 * s2 - c * s1 * s2));
+  }
+
+  /**
+   * Hat das Signal wirklich Teiltöne der tieferen Periode k·τ? Bei echtem schwachem Grundton
+   * liegt (leise) Energie auf f/k, 3f/k …; bei Artefakten (z. B. Verzerrung hoher Töne) nicht.
+   */
+  function hasSubharmonics(tau, k) {
+    const f = sampleRate / tau;
+    const ref = amplitudeAt(f) || 1e-12;
+    let maxRatio = 0;
+    for (let m = 1; m < 3 * k; m++) {
+      if (m % k === 0) continue;
+      const fm = (f * m) / k;
+      if (fm >= sampleRate / 2) break;
+      maxRatio = Math.max(maxRatio, amplitudeAt(fm) / ref);
+    }
+    return maxRatio >= 0.03;
+  }
+
   // Parabel durch (τ−1, τ, τ+1): verfeinerte Lage und Tiefe der Mulde
   function refine(tau) {
     const y0 = cm[tau - 1];
@@ -122,7 +157,7 @@ export function createPitchDetector({
         const c = Math.round(best.tau * k);
         if (c > maxTau - 1) break;
         const cand = refine(localMinNear(c));
-        if (best.value > 0.02 && cand.value < 0.5 * best.value && cand.value < thr) {
+        if (best.value > 0.02 && cand.value < 0.5 * best.value && cand.value < thr && hasSubharmonics(best.tau, k)) {
           best = cand;
           changed = true;
           break;

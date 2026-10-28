@@ -1,7 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { Mic } from 'lucide-react';
 import { noteName } from '../lib/notes.js';
 import { useMicFrames, useTracker } from './hooks.js';
+import { createAnswerGate } from '../audio/answer.js';
 import { Card } from './common.jsx';
 
 // ==========================================
@@ -226,10 +227,13 @@ export function fmtTime(ms) {
 /**
  * Hört auf den nächsten Ton für `task` (mit task.id und task.shownAt = performance.now()).
  * Schutz vor Fehlauslösung: 250 ms Sperrzeit nach Aufgabenwechsel; ein noch klingender
- * vorheriger Ton (blockMidi) zählt erst nach einem neuen Anschlag.
+ * vorheriger Ton (blockMidi) zählt erst nach einem neuen Anschlag. Mit isCorrect(midi)
+ * zählt ein richtiger Ton sofort, ein falscher erst nach 0,3 s stabilem Klang – Slides,
+ * Rutsch- und Nebengeräusche werden so nicht als Fehler gewertet (src/audio/answer.js).
  */
-export function MicAnswer({ settings, task, armed, blockMidi, onNote }) {
+export function MicAnswer({ settings, task, armed, blockMidi, onNote, isCorrect }) {
   const tracker = useTracker(settings);
+  const gate = useMemo(() => createAnswerGate(), []);
   const st = useRef({ id: null, start: 0, onset: false, done: false });
   const [db, setDb] = useState(-120);
   const tick = useRef(0);
@@ -240,15 +244,23 @@ export function MicAnswer({ settings, task, armed, blockMidi, onNote }) {
     if (!task || !armed) return;
     if (st.current.id !== task.id) {
       st.current = { id: task.id, start: frame.time, onset: false, done: false };
+      gate.reset();
       return;
     }
     const s = st.current;
     if (s.done) return;
     if (u.onset) s.onset = true;
-    if (!u.event || frame.time - s.start < 250) return;
-    if (u.event.midi === blockMidi && !s.onset) return;
+    if (frame.time - s.start < 250) return;
+    // noch klingender vorheriger Ton zählt nicht (außer nach neuem Anschlag)
+    const uu = u.event && u.event.midi === blockMidi && !s.onset ? { ...u, event: null } : u;
+    let midi = null;
+    if (isCorrect) {
+      const r = gate.update(uu, frame.time, isCorrect);
+      if (r) midi = r.midi;
+    } else if (uu.event) midi = uu.event.midi;
+    if (midi == null) return;
     s.done = true;
-    onNote(u.event.midi, Math.max(0, frame.time - task.shownAt), 'mic');
+    onNote(midi, Math.max(0, frame.time - task.shownAt), 'mic');
   });
 
   const above = db >= settings.minDb;

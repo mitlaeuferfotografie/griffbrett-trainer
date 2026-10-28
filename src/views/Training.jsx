@@ -307,7 +307,14 @@ export function TrainingView({ settings, update, progress, setProgress, onBack, 
           )}
           {inputMode === 'mic' ? (
             <MicGate settings={settings} update={update} onTapMode={() => setInputMode('tap')}>
-              <MicAnswer settings={settings} task={task} armed={!feedback && running} blockMidi={lastMidiRef.current} onNote={answer} />
+              <MicAnswer
+                settings={settings}
+                task={task}
+                armed={!feedback && running}
+                blockMidi={lastMidiRef.current}
+                onNote={answer}
+                isCorrect={(m) => !!task && judge(strings, task, m, fretMax).correct}
+              />
             </MicGate>
           ) : (
             !feedback && <TapAnswer strings={strings} fretMax={fretMax} names={names} task={task} armed={!feedback && running} onNote={answer} />

@@ -21,6 +21,7 @@ export const WAVEFORMS = [
   { id: 'schwach', label: 'Schwacher Grundton', partials: [0.15, 1, 0.3, 0.6, 0.3, 0.2, 0.1], decay: 0.6, inharmonicity: 1e-4 },
   { id: 'oktav', label: 'Grundton fast weg (Oktavfalle)', partials: [0.08, 1, 0.08, 0.5, 0.05, 0.3], decay: 0.6, inharmonicity: 1e-4 },
   { id: 'rauschen', label: 'Obertöne + Rauschen (20 dB)', partials: GUITAR, decay: 0.6, inharmonicity: 1e-4, snrDb: 20 },
+  { id: 'verzerrt', label: 'Verzerrt (übersteuerter Amp)', partials: GUITAR, decay: 0.6, inharmonicity: 1e-4, drive: 12, snrDb: 30 },
 ];
 
 /**
@@ -52,8 +53,12 @@ export function synthesize(wave, freq, { sampleRate, length, seed = 1, startTime
   for (let n = 0; n < length; n++) peak = Math.max(peak, Math.abs(out[n]));
   const gain = peak > 0 ? 0.5 / peak : 0;
   let sum = 0;
+  const drive = wave.drive || 0;
+  const norm = drive ? Math.tanh(drive) : 1;
   for (let n = 0; n < length; n++) {
     out[n] *= gain;
+    // Übersteuerung wie bei einem verzerrten Amp (weiche Begrenzung)
+    if (drive) out[n] = (0.5 * Math.tanh(drive * 2 * out[n])) / norm;
     sum += out[n] * out[n];
   }
   if (wave.snrDb != null) {

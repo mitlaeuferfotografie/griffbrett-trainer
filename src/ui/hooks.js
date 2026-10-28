@@ -44,9 +44,11 @@ export function useWakeLock(active) {
   }, [active]);
 }
 
-export function useTracker(settings) {
+/** Notenverfolgung; profile z. B. TRACKER_FAST für schnelles Spiel (Improvisieren). */
+export function useTracker(settings, profile = null) {
   return useMemo(
-    () => createNoteTracker({ a4: settings.a4, minDb: settings.minDb }),
-    [settings.a4, settings.minDb],
+    () => createNoteTracker({ ...(profile || {}), a4: settings.a4, minDb: settings.minDb }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [settings.a4, settings.minDb, profile],
   );
 }

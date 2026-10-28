@@ -159,7 +159,16 @@ export function PatternRun({ settings, update, progress, setProgress, strings, n
           right={
             <>
               <Card className="p-3 mt-4">{board}</Card>
-              {!result && <MicAnswer settings={settings} task={task} armed blockMidi={lastMidi.current} onNote={onNote} />}
+              {!result && (
+                <MicAnswer
+                  settings={settings}
+                  task={task}
+                  armed
+                  blockMidi={lastMidi.current}
+                  onNote={onNote}
+                  isCorrect={(m) => Math.round(m) === seq[index].midi}
+                />
+              )}
               <p className="text-xs text-slate-500 text-center mt-3">Zählt nicht im Lernstand.</p>
             </>
           }

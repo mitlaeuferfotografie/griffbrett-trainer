@@ -13,6 +13,9 @@
 import { createPitchDetector } from './pitch.js';
 
 export const BUFFER_SIZE = 4096;
+// Schneller Modus (Improvisieren): halb so langes Messfenster (≈ 43 ms statt 85 ms),
+// damit schnelle Läufe und Riffs mitkommen. Erkennt laut Selbsttest weiterhin ab 55 Hz.
+export const FAST_BUFFER_SIZE = 2048;
 
 let state = { status: 'idle', error: null, sampleRate: null };
 const statusListeners = new Set();
@@ -24,6 +27,13 @@ let source = null;
 let analyser = null;
 let buffer = null;
 let detector = null;
+let fastDetector = null;
+let fastMode = false;
+
+/** Schnellen Modus ein-/ausschalten (gilt bis zum Ausschalten oder stopMic). */
+export function setFastMode(on) {
+  fastMode = !!on;
+}
 let raf = 0;
 let running = false;
 
@@ -55,7 +65,7 @@ function loop() {
   if (!running) return;
   analyser.getFloatTimeDomainData(buffer);
   const t0 = performance.now();
-  const r = detector.detect(buffer);
+  const r = (fastMode && fastDetector ? fastDetector : detector).detect(buffer);
   const frame = { time: t0, freq: r.freq, clarity: r.clarity, rms: r.rms, computeMs: performance.now() - t0 };
   frameListeners.forEach((fn) => fn(frame));
   raf = requestAnimationFrame(loop);
@@ -125,6 +135,7 @@ export async function startMic() {
     }
     if (!detector || detector.sampleRate !== ctx.sampleRate) {
       detector = createPitchDetector({ sampleRate: ctx.sampleRate, bufferSize: BUFFER_SIZE });
+      fastDetector = createPitchDetector({ sampleRate: ctx.sampleRate, bufferSize: FAST_BUFFER_SIZE });
     }
     setState({ status: 'running', error: null, sampleRate: ctx.sampleRate });
     startLoop();
@@ -141,6 +152,7 @@ export async function startMic() {
 
 /** Mikrofon freigeben (orangener Punkt in iOS verschwindet). */
 export function stopMic() {
+  fastMode = false;
   stopLoop();
   stream?.getTracks().forEach((t) => t.stop());
   stream = null;

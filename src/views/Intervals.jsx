@@ -526,7 +526,16 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
           )}
           {inputMode === 'mic' && (
             <MicGate settings={settings} update={update} onTapMode={() => setInputMode('tap')}>
-              <MicAnswer settings={settings} task={task} armed={!feedback && running} blockMidi={lastMidiRef.current} onNote={onMicNote} />
+              <MicAnswer
+                settings={settings}
+                task={task}
+                armed={!feedback && running}
+                blockMidi={lastMidiRef.current}
+                onNote={onMicNote}
+                isCorrect={(m) =>
+                  !!task && (stage === 'root' ? Math.round(m) === task.rootMidi : judgeInterval(strings, task, m).correct)
+                }
+              />
             </MicGate>
           )}
           {visible && task && !feedback && (

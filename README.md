@@ -185,6 +185,8 @@ tests/                 Node-Tests (node --test)
 ```
 
 ### Tonerkennung
+- **Verzerrung & schnelles Spiel (28.10.2026):** Improvisieren nutzt einen schnellen Modus (Messfenster 2048 statt 4096 Samples, Profil `TRACKER_FAST`): verzerrte Läufe mit 80 ms pro Ton werden vollständig erkannt (normal: 2 von 23). Oktavkorrektur prüft zusätzlich echte Energie auf der Unteroktave (Goertzel) – verhindert Oktavfehler bei hohen verzerrten Tönen.
+- **Slides & Nebengeräusche:** In Übungen zählt der richtige Ton sofort, ein falscher erst nach 0,3 s stabilem Klang (`src/audio/answer.js`); gleitet die Tonhöhe weiter (Slide), wird nichts gewertet.
 - **YIN** mit FFT-beschleunigter Differenzfunktion, Puffer 4096 Samples (≈ 85 ms bei 48 kHz), Suchbereich 50–1500 Hz (Drop A 55 Hz bis hohe E-Saite Bund 24 ≈ 1319 Hz), Parabel-Interpolation.
 - **Oktavfehler-Korrektur:** Ist die Mulde bei 2τ oder 3τ deutlich tiefer als bei τ, war τ ein Oberton → längere Periode. Ohne diese Korrektur scheitert der Test „Grundton fast weg“ in 47 von 56 Fällen um genau eine Oktave, mit ihr in keinem.
 - **Notenverfolgung:** Ein Ton gilt als erkannt, wenn 4 Messungen in Folge (≈ 70 ms) innerhalb ±40 Cent liegen; einzelne Oktavsprünge werden übersprungen; ein Pegelsprung (Anschlag) meldet denselben Ton erneut.

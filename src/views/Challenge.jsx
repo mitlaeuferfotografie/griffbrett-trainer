@@ -186,7 +186,16 @@ export function ChallengeView({ settings, update, progress, setProgress, onBack 
               <TaskText task={task} strings={strings} names={names} chip={miss ? <span className="text-orange-400 font-bold">nicht {pcName(pitchClass(lastMidi.current), names)}</span> : null} />
             </Card>
           }
-          right={<MicAnswer settings={settings} task={task} armed blockMidi={lastMidi.current} onNote={onNote} />}
+          right={
+            <MicAnswer
+              settings={settings}
+              task={task}
+              armed
+              blockMidi={lastMidi.current}
+              onNote={onNote}
+              isCorrect={(m) => !!task && judge(strings, task, m, 12).correct}
+            />
+          }
         />
       </MicGate>
     </div>
