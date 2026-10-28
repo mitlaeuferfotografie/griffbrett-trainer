@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Gauge, Activity, Settings, Play, BarChart3, Layers, Timer, HardDriveDownload, ArrowDownToLine, Shapes, Music } from 'lucide-react';
+import { Gauge, Activity, Settings, Play, BarChart3, Layers, Timer, HardDriveDownload, ArrowLeftToLine, Shapes, Music } from 'lucide-react';
 import { startMic } from './audio/mic.js';
 import { getTuning, tuningNotes } from './lib/tunings.js';
 import { loadData, saveData } from './lib/storage.js';
@@ -137,7 +137,7 @@ function Menu({ settings, update, progress, go, onPrivacy, onExport, onSnooze })
 
       <WideTile icon={Shapes} title="Intervalle" text="Griff-Formen vom Grundton aus (Stufe 2)" onClick={() => go('intervals')} />
       <WideTile icon={Music} title="Tonarten" text="Dur, Moll, Modi, Pentatonik – ganzes Griffbrett mit Stufen" onClick={() => go('scales')} />
-      <WideTile icon={ArrowDownToLine} title="Fallende Töne" text="Im richtigen Moment spielen, wird immer schneller" onClick={() => go('arcade')} />
+      <WideTile icon={ArrowLeftToLine} title="Tonlauf" text="Töne laufen auf der Saite heran – im richtigen Moment spielen, wird immer schneller" onClick={() => go('arcade')} />
 
       <div className="grid grid-cols-2 landscape:grid-cols-3 gap-3">
         <Tile icon={BarChart3} title="Fortschritt" text="Heatmap, Kalender, Bestwerte" onClick={() => go('progress')} />

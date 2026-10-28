@@ -1,6 +1,6 @@
-// „Fallende Töne“: Töne fallen in der Spur ihrer Saite (dicke Saite links) auf die
-// Trefferlinie zu und müssen im richtigen Moment gespielt werden. Wird schneller,
-// je mehr man trifft. Zählt nicht im Lernstand (Zeitdruck), nur die Übungszeit.
+// „Tonlauf“: Töne laufen auf ihrer Saite (waagerecht, dicke Saite unten) von rechts auf die
+// Trefferlinie links zu und müssen im richtigen Moment gespielt werden – wie beim Tab-Lesen.
+// Wird schneller, je mehr man trifft. Zählt nicht im Lernstand (Zeitdruck), nur die Übungszeit.
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Pause, Play, Trophy } from 'lucide-react';
 import { pcName, noteName } from '../lib/notes.js';
@@ -16,7 +16,10 @@ import { startMic } from '../audio/mic.js';
 import { useMicStatus, useMicFrames, useTracker } from '../ui/hooks.js';
 import { Card, Header, MicGate, Segmented, namesOf } from '../ui/common.jsx';
 
-const LINE = 84; // Trefferlinie in % der Spielfeldhöhe
+const LABEL_X = 7; // Saiten beginnen hier (% der Breite), links davon die Saitennamen
+const LINE_X = 16; // Trefferlinie (% der Breite)
+/** x-Position (%) eines Tons beim Fortschritt p (0 = rechts, 1 = Trefferlinie, darüber links davon) */
+const xOf = (p) => LINE_X + (1 - p) * (96 - LINE_X);
 const MAX_ON_SCREEN = 4;
 
 export function ArcadeView({ settings, update, progress, setProgress, onBack }) {
@@ -155,10 +158,10 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
   if (phase === 'setup') {
     return (
       <div>
-        <Header title="Fallende Töne" onBack={onBack} />
+        <Header title="Tonlauf" onBack={onBack} />
         <Card className="mb-4">
           <p className="text-slate-300 text-sm mb-4">
-            Töne fallen in der Spur ihrer Saite nach unten. Spiel sie, wenn sie die helle Zone erreichen – nahe der Linie ist „perfekt“. Je mehr du triffst, desto schneller wird es. Fünf durchgerutschte Töne beenden die Runde, falsche Töne nur die Serie. Zählt nicht im Lernstand.
+            Töne laufen auf ihrer Saite von rechts auf die Linie zu – dicke Saite unten, wie auf dem Griffbrett. Spiel sie, wenn sie die helle Zone erreichen; nahe der Linie ist „perfekt“. Je mehr du triffst, desto schneller wird es. Fünf durchgerutschte Töne beenden die Runde, falsche Töne nur die Serie. Zählt nicht im Lernstand.
           </p>
           <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-2">Töne</p>
           <Segmented
@@ -197,7 +200,7 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
     const { run, isBest, prev } = result;
     return (
       <div>
-        <Header title="Fallende Töne" onBack={onBack} />
+        <Header title="Tonlauf" onBack={onBack} />
         <Card className="text-center py-8 mb-4">
           <p className="text-slate-400 mb-1">Punkte</p>
           <p className="text-6xl font-black tabular">{run.score.toLocaleString('de-DE')}</p>
@@ -236,6 +239,8 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
   const g = game.current;
   const run = g.run;
   const n = strings.length;
+  /** y-Position (%) der Saite: hohe oben, dicke unten */
+  const rowTop = (s) => ((n - 1 - s + 0.5) / n) * 100;
   return (
     <div>
       <Header
@@ -261,26 +266,33 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
         </span>
       </div>
       <MicGate settings={settings} update={update}>
-        <div className="relative h-[62vh] rounded-3xl bg-slate-900 border-2 border-slate-800 overflow-hidden select-none">
-          {/* Spuren, dicke Saite links */}
-          <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
-            {strings.map((_, s) => (
-              <div key={s} className="border-r border-slate-800 last:border-r-0" />
-            ))}
-          </div>
-          {/* Trefferzone und -linie */}
-          <div className="absolute inset-x-0 bg-indigo-500/10" style={{ top: `${ZONE.early * LINE}%`, height: `${(ZONE.late - ZONE.early) * LINE}%` }} />
-          <div className="absolute inset-x-0 bg-indigo-400/15" style={{ top: `${ZONE.perfect * LINE}%`, height: `${(ZONE.late - ZONE.perfect) * LINE}%` }} />
-          <div className="absolute inset-x-0 h-1 bg-slate-300" style={{ top: `${LINE}%` }} />
-          {/* Saitennamen unter der Linie */}
-          <div className="absolute inset-x-0 bottom-0 grid pb-2" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
-            {strings.map((m, s) => (
-              <div key={s} className="text-center text-sm font-black text-slate-400">
-                {noteName(m, names)}
-              </div>
-            ))}
-          </div>
-          {/* Töne */}
+        <div
+          className="relative rounded-3xl bg-slate-900 border-2 border-slate-800 overflow-hidden select-none"
+          style={{ height: 'clamp(220px, 55vh, 380px)' }}
+        >
+          {/* Trefferzone und -linie (links, wie der Sattel) */}
+          <div className="absolute inset-y-0 bg-indigo-500/10" style={{ left: `${xOf(ZONE.late)}%`, width: `${xOf(ZONE.early) - xOf(ZONE.late)}%` }} />
+          <div className="absolute inset-y-0 bg-indigo-400/15" style={{ left: `${xOf(ZONE.late)}%`, width: `${xOf(ZONE.perfect) - xOf(ZONE.late)}%` }} />
+          <div className="absolute inset-y-0 w-1.5 bg-slate-300" style={{ left: `${LINE_X}%` }} />
+          {/* Saiten: hohe oben, dicke unten */}
+          {strings.map((m, s) => {
+            const px = 1 + (1 - s / Math.max(1, n - 1)) * 2.2;
+            return (
+              <React.Fragment key={s}>
+                <div
+                  className="absolute right-0 bg-slate-500"
+                  style={{ left: `${LABEL_X}%`, top: `calc(${rowTop(s)}% - ${px / 2}px)`, height: px }}
+                />
+                <div
+                  className="absolute -translate-y-1/2 text-sm font-black text-slate-400"
+                  style={{ left: '2%', top: `${rowTop(s)}%` }}
+                >
+                  {noteName(m, names)}
+                </div>
+              </React.Fragment>
+            );
+          })}
+          {/* Töne laufen von rechts auf die Linie zu */}
           {g.notes.map((note) => {
             const p = note.state === 'live' ? (g.time - note.t0) / note.fall : (note.doneAt - note.t0) / note.fall;
             const inZone = p >= ZONE.early;
@@ -292,14 +304,14 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
                   ? 'bg-orange-500 text-orange-950 opacity-0'
                   : inZone
                     ? 'bg-indigo-500 text-white ring-2 ring-indigo-200'
-                    : 'bg-slate-700 text-slate-100';
+                    : 'bg-slate-600 text-white';
             return (
               <div
                 key={note.id}
-                className={`absolute w-12 h-12 -ml-6 -mt-6 rounded-xl flex items-center justify-center font-black shadow-lg transition-[opacity,transform,background-color] duration-300 ${
-                  label.length > 3 ? 'text-xs' : 'text-xl'
-                } ${cls}`}
-                style={{ left: `${((note.string + 0.5) / n) * 100}%`, top: `${Math.min(p, 1.2) * LINE}%` }}
+                className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center font-black shadow-lg transition-[opacity,transform,background-color] duration-300 ${
+                  n > 6 ? 'w-9 h-9' : 'w-11 h-11'
+                } ${label.length > 3 ? 'text-[10px]' : 'text-lg'} ${cls}`}
+                style={{ left: `${xOf(Math.min(p, 1.2))}%`, top: `${rowTop(note.string)}%` }}
               >
                 {label}
               </div>
@@ -309,12 +321,12 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
           {g.popups.map((pp) => (
             <div
               key={pp.id}
-              className={`absolute -translate-x-1/2 whitespace-nowrap text-sm font-black pointer-events-none ${
+              className={`absolute -translate-y-1/2 whitespace-nowrap text-sm font-black pointer-events-none ${
                 pp.tone === 'hit' ? 'text-emerald-400' : pp.tone === 'miss' ? 'text-orange-400' : pp.tone === 'level' ? 'text-indigo-300 text-lg' : 'text-slate-300'
               }`}
               style={{
-                left: pp.string == null ? '50%' : `${Math.min(80, Math.max(20, ((pp.string + 0.5) / n) * 100))}%`,
-                top: pp.string == null ? '35%' : `${LINE - 12 - ((g.time - pp.at) / 900) * 8}%`,
+                left: pp.string == null ? '45%' : `${LINE_X + 6 + ((g.time - pp.at) / 900) * 4}%`,
+                top: pp.string == null ? '50%' : `${rowTop(pp.string) - 100 / n / 2}%`,
                 opacity: 1 - (g.time - pp.at) / 900,
               }}
             >

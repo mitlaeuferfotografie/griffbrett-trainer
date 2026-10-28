@@ -181,7 +181,7 @@ export function ProgressView({ settings, progress, onBack }) {
               {['learned', 'naturals'].filter((m) => progress.bests.arcade?.[m]).map((m) => (
                 <Row
                   key={`ar${m}`}
-                  k={`Fallende Töne (${m === 'learned' ? 'freigeschaltete' : 'alle natürlichen'})`}
+                  k={`Tonlauf (${m === 'learned' ? 'freigeschaltete' : 'alle natürlichen'})`}
                   v={`${progress.bests.arcade[m].score.toLocaleString('de-DE')} · Stufe ${progress.bests.arcade[m].level}`}
                 />
               ))}

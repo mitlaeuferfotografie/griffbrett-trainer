@@ -13,7 +13,7 @@ Privates Projekt, **nicht** auf der Übersichtsseite der Lern-Apps eingetragen.
 | Stimmgerät | fertig, weiterer Hardware-Test folgt |
 | Diagnose (Live-Werte, erkannte Töne, Selbsttest auf dem Gerät) | fertig |
 | **Version 1:** Ton finden, adaptive Wiederholung, Heatmap, Session, Gamification, Export/Import, Hell-Modus, Offline | fertig (28.10.2026), Praxistest am iPhone steht aus |
-| Übung „Fallende Töne“ (Timing, steigendes Tempo) | fertig (28.10.2026) |
+| Übung „Tonlauf“ (früher „Fallende Töne“; Timing, steigendes Tempo) | fertig (28.10.2026) |
 | Impressum & Datenschutz | fertig |
 | **Ausbaustufe 2:** Intervalle als Griff-Formen (auf- und abwärts, „Grundton zuerst“) | fertig (28.10.2026), Praxistest steht aus |
 | Tonarten-Übersicht (Griffbrett bis Bund 24) + Übung „Stufen finden“ | fertig (28.10.2026) |
@@ -63,9 +63,9 @@ Ein Grundton wird auf dem Griffbrett gezeigt (mit Name und Saite), gefragt ist z
 - **Korrekte Schreibweise:** G-Dur hat Fis, F-Dur hat B; bei schwarzen Grundtönen gewinnt die Variante mit weniger Vorzeichen (Des-Dur statt Cis-Dur, fis-Moll statt ges-Moll; Gleichstand nach Vorzeichen-Einstellung).
 - **Übung „Stufen finden“**: 10 Aufgaben wie „6 in G-Dur auf der D-Saite“, Mikrofon oder Antippen, Rückmeldung mit Stufe, Tonname und Bund. Zählt nicht im Lernstand.
 
-### Fallende Töne (`src/lib/arcade.js`, `src/views/Arcade.jsx`)
-Töne fallen in der Spur ihrer Saite (dicke Saite links) auf eine Trefferlinie zu und müssen im richtigen Moment gespielt werden.
-- **Timing:** Fortschritt p (0 = oben, 1 = Linie). Unter 0,6 „zu früh“ (zählt nicht, Ton fällt weiter), 0,6–0,85 „gut“, 0,85–1,15 „perfekt“, danach verpasst.
+### Tonlauf (`src/lib/arcade.js`, `src/views/Arcade.jsx`)
+Töne laufen auf ihrer Saite – waagerecht, dicke Saite unten wie auf dem Griffbrett – von rechts auf eine Trefferlinie links zu und müssen im richtigen Moment gespielt werden (wie beim Tab-Lesen).
+- **Timing:** Fortschritt p (0 = rechts, 1 = Linie). Unter 0,6 „zu früh“ (zählt nicht, Ton fällt weiter), 0,6–0,85 „gut“, 0,85–1,15 „perfekt“, danach verpasst.
 - **Tempo:** 10 Stufen, Fallzeit 6 s (Stufe 1) bis ca. 1,5 s (Stufe 10). Alle 8 Treffer eine Stufe schneller, nach 2 verpassten Tönen in Folge eine Stufe langsamer.
 - **Start-Tempo:** automatisch aus dem Anteil sitzender Positionen und der bisher erreichten Höchststufe (2 darunter), oder Ruhig (1) / Mittel (4) / Schnell (7).
 - **Töne:** freigeschaltete Positionen (bevorzugt bereits eingeführte) oder alle natürlichen Töne auf allen Saiten.
@@ -157,7 +157,7 @@ src/
     curriculum.js      Gruppen, Freischaltung, aktive Positionen
     session.js         Aufgabenwahl, Prüflogik (Tonklasse + Lage)
     stats.js           Übungstage, Wochenziel, Bestwerte, Meilensteine, Zusammenfassung
-    arcade.js          „Fallende Töne“: Tempo, Timing-Zonen, Punkte, Stufen, Tonvorrat
+    arcade.js          „Tonlauf“: Tempo, Timing-Zonen, Punkte, Stufen, Tonvorrat
     intervals.js       Ausbaustufe 2: Intervall-Formen (auf/ab), Einführung, Aufgaben, Prüfung
     scales.js          Tonarten/Skalen: Stufen, Schreibweise, Vorzeichen, Paralleltonart
     storage.js         localStorage, Export/Import

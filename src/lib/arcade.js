@@ -1,7 +1,7 @@
-// „Fallende Töne“: Töne fallen in der Spur ihrer Saite auf eine Trefferlinie zu und
+// „Tonlauf“ (intern „arcade“): Töne laufen auf ihrer Saite auf eine Trefferlinie zu und
 // müssen im richtigen Moment gespielt werden. Reine Logik, in Node getestet.
 //
-// Fortschritt eines Tons p: 0 = oben, 1 = Trefferlinie.
+// Fortschritt eines Tons p: 0 = Start (rechts), 1 = Trefferlinie.
 //   p < EARLY        → zu früh (zählt nicht, Ton fällt weiter)
 //   EARLY … PERFECT  → „gut“
 //   PERFECT … LATE   → „perfekt“
