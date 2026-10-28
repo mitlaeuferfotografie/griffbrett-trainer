@@ -22,16 +22,17 @@ function pickRandom(list, rand) {
 
 /**
  * Nächste Aufgabe oder null (wenn keine Positionen aktiv sind).
- * positions: aktive Positionen [{ string, fret, key, group }]
+ * positions: aktive Lerneinheiten [{ key, group, … }]
+ * make(strings, unit, kind): baut die konkrete Aufgabe (Standard: „Ton auf Saite“)
  */
-export function pickTask({ strings, positions, units, session, now, rand = Math.random }) {
+export function pickTask({ strings, positions, units, session, now, rand = Math.random, make = makeTask }) {
   if (!positions.length) return null;
   const notRecent = (p) => !session.recent.includes(p.key);
 
   const retry = session.retry.find((r) => r.at <= session.asked);
   if (retry) {
     const p = positions.find((x) => x.key === retry.key);
-    if (p) return makeTask(strings, p, 'retry');
+    if (p) return make(strings, p, 'retry');
   }
 
   const introduced = positions.filter((p) => units[p.key] && units[p.key].n > 0);
@@ -60,11 +61,11 @@ export function pickTask({ strings, positions, units, session, now, rand = Math.
     const pool = pools[kind]();
     const fresh = pool.filter(notRecent);
     const pick = fresh.length ? pickRandom(fresh, rand) : null;
-    if (pick) return makeTask(strings, pick, kind);
+    if (pick) return make(strings, pick, kind);
   }
   // alles kürzlich gefragt: irgendeine andere Position
   const any = positions.filter(notRecent);
-  return makeTask(strings, pickRandom(any.length ? any : positions, rand), 'weak');
+  return make(strings, pickRandom(any.length ? any : positions, rand), 'weak');
 }
 
 export function makeTask(strings, p, kind) {

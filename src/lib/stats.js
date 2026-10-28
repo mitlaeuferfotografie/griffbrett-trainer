@@ -3,6 +3,7 @@
 import { dayKey, daysBetween, status, STATUS_ORDER } from './srs.js';
 import { buildGroups, groupUnits, groupLabel, allPositions } from './curriculum.js';
 import { stringName } from './fretboard.js';
+import { INTERVAL_GROUPS, activeShapes } from './intervals.js';
 
 export const WEEK_GOAL_DAYS = 4;
 export const CALENDAR_DAYS = 28;
@@ -13,6 +14,7 @@ export const DEFAULT_PROGRESS = {
   days: {}, // 'YYYY-MM-DD' → { sec, answers, correct }
   totals: { sessions: 0, answers: 0, correct: 0, sec: 0 },
   bests: { run: 0, sitzt: 0, rtByString: {}, challenge: {}, arcade: {} },
+  intervals: { units: {}, unlocked: {} }, // Ausbaustufe 2: Formen-Lernstand, freie Gruppen je Stimmung
   milestones: {}, // id → { day, label }
   unlocked: {}, // tuningId → Anzahl freier Gruppen
   lastExport: null,
@@ -25,6 +27,7 @@ export function normalizeProgress(p) {
     ...d,
     ...(p || {}),
     totals: { ...d.totals, ...(p?.totals || {}) },
+    intervals: { units: { ...(p?.intervals?.units || {}) }, unlocked: { ...(p?.intervals?.unlocked || {}) } },
     bests: { ...d.bests, ...(p?.bests || {}), rtByString: { ...(p?.bests?.rtByString || {}) }, challenge: { ...(p?.bests?.challenge || {}) }, arcade: { ...(p?.bests?.arcade || {}) } },
   };
 }
@@ -126,6 +129,16 @@ export function milestoneDefs(strings, names) {
     { id: `board12:${strings.join(',')}`, label: 'Ganzes Griffbrett bis Bund 12', check: ({ units }) => allSitzt(units, allPositions(strings, 12)) },
     { id: `board24:${strings.join(',')}`, label: 'Ganzes Griffbrett bis Bund 24', check: ({ units }) => allSitzt(units, allPositions(strings, 24)) },
   );
+  INTERVAL_GROUPS.forEach((g, i) => {
+    defs.push({
+      id: `iv:${g.id}:${strings.join(',')}`,
+      label: `Intervalle: ${g.label} sitzen`,
+      check: ({ progress }) => {
+        const shapes = activeShapes(strings, i + 1).filter((s) => g.semis.includes(s.semis));
+        return shapes.length > 0 && shapes.every((s) => status(progress.intervals.units[s.key]) === 'sitzt');
+      },
+    });
+  });
   [10, 30, 100].forEach((n) =>
     defs.push({ id: `days-${n}`, label: `${n} Übungstage`, check: ({ progress }) => practiceDayCount(progress) >= n }),
   );
