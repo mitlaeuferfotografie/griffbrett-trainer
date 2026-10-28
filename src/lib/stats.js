@@ -14,7 +14,7 @@ export const DEFAULT_PROGRESS = {
   days: {}, // 'YYYY-MM-DD' → { sec, answers, correct }
   totals: { sessions: 0, answers: 0, correct: 0, sec: 0 },
   bests: { run: 0, sitzt: 0, rtByString: {}, challenge: {}, arcade: {}, patterns: {} },
-  intervals: { units: {}, unlocked: {} }, // Ausbaustufe 2: Formen-Lernstand, freie Gruppen je Stimmung
+  intervals: { units: {}, unlocked: {}, names: {} }, // Ausbaustufe 2: Formen-Lernstand, freie Gruppen je Stimmung
   milestones: {}, // id → { day, label }
   unlocked: {}, // tuningId → Anzahl freier Gruppen
   lastExport: null,
@@ -27,7 +27,7 @@ export function normalizeProgress(p) {
     ...d,
     ...(p || {}),
     totals: { ...d.totals, ...(p?.totals || {}) },
-    intervals: { units: { ...(p?.intervals?.units || {}) }, unlocked: { ...(p?.intervals?.unlocked || {}) } },
+    intervals: { units: { ...(p?.intervals?.units || {}) }, unlocked: { ...(p?.intervals?.unlocked || {}) }, names: { ...(p?.intervals?.names || {}) } },
     bests: { ...d.bests, ...(p?.bests || {}), rtByString: { ...(p?.bests?.rtByString || {}) }, challenge: { ...(p?.bests?.challenge || {}) }, arcade: { ...(p?.bests?.arcade || {}) }, patterns: { ...(p?.bests?.patterns || {}) } },
   };
 }

@@ -22,7 +22,7 @@ export const DEFAULT_SETTINGS = {
   theme: 'dark', // 'dark' | 'light'
   intervalDir: 'both', // Intervalle: 'both' | 'up' | 'down'
   intervalRootFirst: true, // Intervalle: erst Grundton, dann Intervall spielen
-  intervalNameQuiz: true, // Intervalle: vor dem Spielen den Namen des Zieltons antippen
+  intervalNameMode: 'auto', // Intervalle, Name des Zieltons: 'off' | 'tap' (antippen) | 'head' (im Kopf, danach aufgedeckt) | 'auto'
   scaleRoot: 7, // Tonarten: zuletzt gewählter Grundton (Tonklasse, 7 = G)
   scaleId: 'major', // Tonarten: zuletzt gewählte Skala
   scalePattern: 'all', // Tonarten: 'all' (ganzes Griffbrett) | 3 (3NPS) | 2 (2NPS)
@@ -32,7 +32,7 @@ export const DEFAULT_SETTINGS = {
   homeHintDismissed: false, // Hinweis „Zum Home-Bildschirm“ ausgeblendet
   scaleColors: 'mono', // Tonarten: 'mono' (einfarbig, Grundton hervorgehoben) | 'degree' (Stufenfarben)
   micExplained: false,
-  settingsRev: 1, // Stand der Grundeinstellungen (für einmalige Umstellungen alter Daten)
+  settingsRev: 2, // Stand der Grundeinstellungen (für einmalige Umstellungen alter Daten)
 };
 
 /** Gespeicherte Einstellungen mit Grundwerten ergänzen; einmalige Umstellungen nach settingsRev. */
@@ -40,6 +40,9 @@ export function mergeSettings(stored = {}) {
   const s = { ...DEFAULT_SETTINGS, ...stored };
   // Rev 1 (28.10.2026): „Grundton zuerst“ standardmäßig an
   if ((stored.settingsRev || 0) < 1) s.intervalRootFirst = true;
+  // Rev 2: Schalter intervalNameQuiz → Auswahl intervalNameMode
+  if ((stored.settingsRev || 0) < 2 && stored.intervalNameQuiz === false) s.intervalNameMode = 'off';
+  delete s.intervalNameQuiz;
   s.settingsRev = DEFAULT_SETTINGS.settingsRev;
   return s;
 }

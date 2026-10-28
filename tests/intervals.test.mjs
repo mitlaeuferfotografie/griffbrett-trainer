@@ -151,3 +151,32 @@ test('Zielton benennen: vier verschiedene Antworten, genau eine richtig, nahelie
   for (let i = 0; i < 50; i++) if (nameChoices(target, rand).some((c) => nm(c) === 'Es')) es++;
   assert.ok(es >= 40, String(es));
 });
+
+import { chooseNameMode, applyNameAnswer, nameKey, NAME_KNOWN } from '../src/lib/intervals.js';
+import { mergeSettings } from '../src/lib/storage.js';
+
+test('Zielton-Name automatisch: tippen bis sicher, dann Kopf mit Stichproben; Fehler → wieder tippen', () => {
+  const key = nameKey({ semis: 4, rootMidi: 48 });
+  assert.equal(key, '4:0');
+  assert.equal(chooseNameMode('auto', {}, key), 'tap');
+  let st;
+  for (let i = 0; i < NAME_KNOWN; i++) st = applyNameAnswer(st, true);
+  const rand = mulberry32(9);
+  const modes = Array.from({ length: 200 }, () => chooseNameMode('auto', { [key]: st }, key, rand));
+  const taps = modes.filter((m) => m === 'tap').length;
+  assert.ok(taps > 20 && taps < 70, String(taps));
+  st = applyNameAnswer(st, false);
+  assert.equal(chooseNameMode('auto', { [key]: st }, key), 'tap');
+  assert.equal(chooseNameMode('head', {}, key), 'head');
+  assert.equal(chooseNameMode('off', {}, key), 'off');
+});
+
+test('Einstellungen: alte Stände werden umgestellt', () => {
+  const old = mergeSettings({ intervalRootFirst: false, intervalNameQuiz: false });
+  assert.equal(old.intervalRootFirst, true);
+  assert.equal(old.intervalNameMode, 'off');
+  assert.equal('intervalNameQuiz' in old, false);
+  const rev1 = mergeSettings({ settingsRev: 1, intervalRootFirst: false, intervalNameQuiz: true });
+  assert.equal(rev1.intervalRootFirst, false, 'bewusst ausgeschaltet bleibt aus');
+  assert.equal(rev1.intervalNameMode, 'auto');
+});

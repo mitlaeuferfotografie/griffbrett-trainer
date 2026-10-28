@@ -2,7 +2,7 @@
 // gefragt ist z. B. „♭3 – eine Saite höher“. Gespielt wird nur der Zielton (exakt, mit Oktave).
 // Gleiche Lernlogik wie „Ton finden“, eigener Lernstand (progress.intervals).
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Pause, Play, Square, Check, X, Mic, Hand, Eye, TrendingUp, Unlock, Shapes } from 'lucide-react';
+import { Pause, Play, Square, Check, X, Mic, Hand, Eye, TrendingUp, Unlock, Shapes, Brain } from 'lucide-react';
 import { noteName, octaveOf } from '../lib/notes.js';
 import { spellName } from '../lib/scales.js';
 import { getTuning } from '../lib/tunings.js';
@@ -13,6 +13,7 @@ import { addPractice, improvements, sessionSummary, evaluateMilestones, fmtSec }
 import {
   INTERVALS, INTERVAL_GROUPS, shapeInfo, activeShapes, shapesFor, makeIntervalTask, judgeInterval,
   computeIntervalUnlocked, intervalUnlockProgress, offsetLabel, parseShapeKey, shapeShort, spellInterval, nameChoices,
+  nameKey, chooseNameMode, applyNameAnswer, NAME_KNOWN,
 } from '../lib/intervals.js';
 import { startMic } from '../audio/mic.js';
 import { useMicStatus, useWakeLock } from '../ui/hooks.js';
@@ -20,6 +21,7 @@ import { Card, Header, MicGate, Segmented, Split, namesOf } from '../ui/common.j
 import { Fretboard, MicAnswer, ProgressBar, Legend, STATUS_STYLE, STATUS_LABEL, fmtTime } from '../ui/board.jsx';
 
 const FEEDBACK_OK_MS = 1300;
+const FEEDBACK_HEAD_MS = 2000; // Kopf-Modus: Zeit zum Vergleichen mit dem gedachten Namen
 const FEEDBACK_WRONG_MS = 3200;
 
 function shapeLabel(key) {
@@ -34,6 +36,20 @@ const DIR_OPTIONS = [
   { value: 'up', label: 'Aufwärts' },
   { value: 'down', label: 'Abwärts' },
 ];
+
+const NAME_OPTIONS = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'tap', label: 'Tippen' },
+  { value: 'head', label: 'Kopf' },
+  { value: 'off', label: 'Aus' },
+];
+
+const NAME_HELP = {
+  auto: `Antippen, bis du den Namen ${NAME_KNOWN}× in Folge richtig hattest – dann im Kopf, mit gelegentlichen Stichproben.`,
+  tap: 'Vor dem Spielen den Namen des Zieltons antippen. Zählt nur, wenn Name und Ton stimmen.',
+  head: 'Namen im Kopf (oder laut) sagen, spielen – danach wird er aufgedeckt.',
+  off: 'Nur die Griff-Form spielen.',
+};
 
 function Toggle({ on, onClick, title, text }) {
   return (
@@ -150,12 +166,9 @@ export function IntervalsView({ settings, update, progress, setProgress, onBack 
         </p>
         <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mt-4 mb-2">Richtung</p>
         <Segmented options={DIR_OPTIONS} value={dir} onChange={(v) => update({ intervalDir: v })} />
-        <Toggle
-          on={settings.intervalNameQuiz}
-          onClick={() => update({ intervalNameQuiz: !settings.intervalNameQuiz })}
-          title="Zielton benennen"
-          text="Vor dem Spielen den Namen des Zieltons antippen – verbindet Griff-Form und Notenname."
-        />
+        <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mt-4 mb-2">Zielton benennen</p>
+        <Segmented options={NAME_OPTIONS} value={settings.intervalNameMode} onChange={(v) => update({ intervalNameMode: v })} />
+        <p className="text-xs text-slate-400 mt-2 px-1">{NAME_HELP[settings.intervalNameMode]}</p>
         <Toggle
           on={settings.intervalRootFirst}
           onClick={() => update({ intervalRootFirst: !settings.intervalRootFirst })}
@@ -203,7 +216,7 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
   const fretMax = settings.fretMax;
   const dir = settings.intervalDir;
   const rootFirst = settings.intervalRootFirst;
-  const nameQuiz = settings.intervalNameQuiz;
+  const nameModeSetting = settings.intervalNameMode;
   const naming = settings.naming;
   const prefer = settings.accidentals === 'flat' ? 'flat' : 'sharp';
   const shapes = useMemo(
@@ -302,14 +315,20 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
     const rootName = spellName(sp.root.letter, sp.root.acc, naming);
     const targetName = spellName(sp.target.letter, sp.target.acc, naming);
     const choices = nameChoices(sp.target).map((c) => ({ ...c, name: spellName(c.letter, c.acc, naming) }));
-    setStage(nameQuiz ? 'name' : rootFirst && inputModeRef.current === 'mic' ? 'root' : 'target');
-    setTask({ ...t, rootName, targetName, choices, id: taskId.current, shownAt: performance.now() });
-  }, [strings, shapes, durationMs, finish, make, rootFirst, nameQuiz, naming, prefer]);
+    const nKey = nameKey(t);
+    const nameMode = chooseNameMode(nameModeSetting, progressRef.current.intervals.names, nKey);
+    setStage(nameMode === 'tap' ? 'name' : rootFirst && inputModeRef.current === 'mic' ? 'root' : 'target');
+    setTask({ ...t, rootName, targetName, choices, nameMode, nameKey: nKey, id: taskId.current, shownAt: performance.now() });
+  }, [strings, shapes, durationMs, finish, make, rootFirst, nameModeSetting, naming, prefer]);
+
+  const recordName = (key, ok) =>
+    setProgress((p) => ({ ...p, intervals: { ...p.intervals, names: { ...p.intervals.names, [key]: applyNameAnswer(p.intervals.names[key], ok) } } }));
 
   // Name gewählt → weiter zum Spielen (bei falschem Namen bleibt die Lösung sichtbar)
   const pickName = (c) => {
     if (!task || stage !== 'name' || feedback) return;
     setNamePick({ name: c.name, ok: c.correct });
+    recordName(task.nameKey, c.correct);
     setStage(rootFirst && inputModeRef.current === 'mic' ? 'root' : 'target');
     taskId.current += 1;
     setTask({ ...task, id: taskId.current, shownAt: performance.now() });
@@ -354,7 +373,8 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
     const now = Date.now();
     const played = midi == null ? { correct: false, playedFret: null, creditKey: task.key } : judgeInterval(strings, task, midi);
     // Mit „Zielton benennen“ zählt die Aufgabe nur als richtig, wenn auch der Name stimmte
-    const nameWrong = nameQuiz && !(namePick && namePick.ok);
+    const nameWrong = task.nameMode === 'tap' && !(namePick && namePick.ok);
+    if (task.nameMode === 'tap' && !namePick) recordName(task.nameKey, false); // Lösung gezeigt, ohne zu benennen
     const res = { ...played, playedOk: played.correct, nameWrong, correct: played.correct && !nameWrong };
     const rt = midi == null ? null : rtMs / 1000;
     setProgress((p) => {
@@ -365,7 +385,7 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
     resultsRef.current.push({ key: res.creditKey, correct: res.correct, rt, mode });
     if (midi != null) lastMidiRef.current = midi;
     setFeedback({ ...res, rt, midi });
-    timerRef.current = setTimeout(nextTask, res.correct ? FEEDBACK_OK_MS : FEEDBACK_WRONG_MS);
+    timerRef.current = setTimeout(nextTask, !res.correct ? FEEDBACK_WRONG_MS : task.nameMode === 'head' ? FEEDBACK_HEAD_MS : FEEDBACK_OK_MS);
   };
 
   const togglePause = () => {
@@ -458,7 +478,11 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
         right={
           <div className="flex gap-2">
             <button
-              onClick={() => setInputMode(inputMode === 'mic' ? 'tap' : 'mic')}
+              onClick={() => {
+                // Beim Antippen gibt es keinen Grundton-Schritt
+                if (inputMode === 'mic' && stage === 'root') setStage('target');
+                setInputMode(inputMode === 'mic' ? 'tap' : 'mic');
+              }}
               aria-label={inputMode === 'mic' ? 'Zu Antippen wechseln' : 'Zu Mikrofon wechseln'}
               className="w-12 h-12 rounded-2xl bg-slate-900 border-2 border-slate-800 flex items-center justify-center text-slate-300"
             >
@@ -510,6 +534,11 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
                     {stage === 'root' && (
                       <div className={`mt-3 inline-block px-4 py-1.5 rounded-full border-2 font-bold ${rootHint ? 'border-orange-500 text-orange-300' : 'border-indigo-400 text-indigo-200'}`}>
                         {rootHint ? 'Erst den Grundton' : 'Zuerst Grundton'} {task.rootName}{octaveOf(task.rootMidi)} spielen
+                      </div>
+                    )}
+                    {task.nameMode === 'head' && (
+                      <div className="mt-3 ml-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border-2 border-slate-600 text-slate-200 font-bold">
+                        <Brain className="w-4 h-4" /> Namen des Zieltons denken
                       </div>
                     )}
                     {stage === 'name' && (
@@ -597,7 +626,7 @@ function IntervalSession({ settings, update, progress, setProgress, onAgain, onH
             </Card>
           )}
           {inputMode === 'mic' && (
-            <MicGate settings={settings} update={update} onTapMode={() => setInputMode('tap')}>
+            <MicGate settings={settings} update={update} onTapMode={() => { if (stage === 'root') setStage('target'); setInputMode('tap'); }}>
               <MicAnswer
                 settings={settings}
                 task={task}

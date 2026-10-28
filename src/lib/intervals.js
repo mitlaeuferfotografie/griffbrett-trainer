@@ -253,3 +253,29 @@ export function nameChoices(target, rand = Math.random) {
   }
   return out;
 }
+
+// ---------- Tippen oder Kopf: automatische Wahl ----------
+// Gemerkt wird je Kombination Grundton + Abstand (nicht je Form), denn der Name hängt nur davon ab:
+// names["<halbtöne>:<grundton-tonklasse>"] = { streak, seen }.
+// Auto: antippen, bis der Name NAME_KNOWN-mal in Folge stimmte; danach Kopf-Modus,
+// mit Stichprobe (NAME_CHECK_SHARE) zum Antippen. Ein Fehler setzt die Serie zurück.
+
+export const NAME_KNOWN = 3;
+export const NAME_CHECK_SHARE = 0.2;
+
+export function nameKey(task) {
+  return `${task.semis}:${pitchClass(task.rootMidi)}`;
+}
+
+/** 'off' | 'tap' | 'head' für diese Aufgabe */
+export function chooseNameMode(mode, names, key, rand = Math.random) {
+  if (mode !== 'auto') return mode === 'tap' || mode === 'head' ? mode : 'off';
+  const st = names && names[key];
+  if (!st || st.streak < NAME_KNOWN) return 'tap';
+  return rand() < NAME_CHECK_SHARE ? 'tap' : 'head';
+}
+
+export function applyNameAnswer(stat, ok) {
+  const s = stat || { streak: 0, seen: 0 };
+  return { streak: ok ? s.streak + 1 : 0, seen: s.seen + 1 };
+}
