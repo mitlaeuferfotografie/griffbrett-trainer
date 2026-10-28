@@ -96,6 +96,15 @@ export function CagedTrainerView({ settings, update, progress, setProgress, onBa
           Gefragt ist ein Akkord in einer Form, z. B. „D-Dur · A-Form“. Finde die Lage und spiel das Arpeggio der Form aufwärts, vom tiefsten Akkordton der Form an. Die Zeit bis zum ersten richtigen Ton zählt – das Finden der Lage ist die eigentliche Übung.
         </p>
         <p className="text-xs text-slate-400 mt-2">Formen ansehen: Reiter Tonarten → CAGED.</p>
+        <button onClick={() => update({ cagedFromRoot: !settings.cagedFromRoot })} className="w-full flex items-center justify-between pt-4">
+          <span className="text-left">
+            <span className="font-bold block">Vom Grundton aus</span>
+            <span className="text-xs text-slate-400">Ab dem Grundton hoch, runter bis zum tiefsten Ton der Form, zurück zum Grundton. Aus: aufwärts ab dem tiefsten Ton der Form.</span>
+          </span>
+          <span className={`w-12 h-7 rounded-full p-1 transition-colors flex-shrink-0 ml-3 ${settings.cagedFromRoot ? 'bg-indigo-500' : 'bg-slate-700'}`}>
+            <span className={`block w-5 h-5 rounded-full bg-white transition-transform ${settings.cagedFromRoot ? 'translate-x-5' : ''}`} />
+          </span>
+        </button>
       </Card>
       <button
         onClick={begin}
@@ -205,7 +214,7 @@ function CagedSession({ settings, update, progress, setProgress, onAgain, onHome
       finish();
       return;
     }
-    const t = pickTask({ strings, positions: units, units: progressRef.current.caged.units, session: sessionRef.current, now: Date.now(), make: makeCagedTask });
+    const t = pickTask({ strings, positions: units, units: progressRef.current.caged.units, session: sessionRef.current, now: Date.now(), make: (st, u, kind) => makeCagedTask(st, u, kind, { fromRoot: settings.cagedFromRoot }) });
     if (!t) {
       finish();
       return;
@@ -218,7 +227,7 @@ function CagedSession({ settings, update, progress, setProgress, onAgain, onHome
     setFeedback(null);
     firstAt.current = null;
     rearm(performance.now());
-  }, [strings, units, durationMs, finish]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [strings, units, durationMs, finish, settings.cagedFromRoot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     nextTask();
@@ -384,7 +393,7 @@ function CagedSession({ settings, update, progress, setProgress, onAgain, onHome
                       <div className="text-3xl font-black text-indigo-300 mt-2">{task.shape}-Form</div>
                       <p className="text-slate-300 mt-3">
                         {index === 0
-                          ? `Arpeggio aufwärts · beginne mit Stufe ${degreeLabel(scale, task.seq[0].semis)}`
+                          ? `Arpeggio ${settings.cagedFromRoot ? 'vom Grundton aus' : 'aufwärts'} · beginne mit Stufe ${degreeLabel(scale, task.seq[0].semis)}`
                           : `Ton ${index + 1} von ${task.seq.length} · Stufe ${degreeLabel(scale, expected.semis)}`}
                       </p>
                       <p className={`h-6 mt-1 font-bold ${miss != null ? 'text-orange-400' : 'text-slate-500 text-sm'}`}>

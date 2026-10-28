@@ -170,9 +170,22 @@ export function cagedUnlockProgress(units, unlocked) {
   return { next: CAGED_GROUPS[unlocked], value: Math.min(1, share(list, units, 'wird') / UNLOCK_WIRD, share(list, units, 'sitzt') / UNLOCK_SITZT) };
 }
 
-/** Konkrete Aufgabe: tiefste Lage der Form bis CAGED_FRET_LIMIT, Spielfolge = Arpeggio aufwärts. */
-export function makeCagedTask(strings, unit, kind) {
+/**
+ * „Vom Grundton aus“: vom tiefsten Grundton der Form hoch bis zum höchsten Ton, hinunter bis
+ * zum tiefsten Ton und zurück zum Grundton. Beginnt die Form mit dem Grundton: einfach aufwärts.
+ */
+export function rootFirstOrder(seq) {
+  const i = seq.findIndex((n) => n.semis === 0);
+  if (i <= 0) return seq;
+  return [...seq.slice(i), ...seq.slice(0, seq.length - 1).reverse(), ...seq.slice(1, i + 1)];
+}
+
+/**
+ * Konkrete Aufgabe: tiefste Lage der Form bis CAGED_FRET_LIMIT. Spielfolge: Arpeggio aufwärts
+ * ab dem tiefsten Ton der Form, mit fromRoot ab dem Grundton (rootFirstOrder).
+ */
+export function makeCagedTask(strings, unit, kind, { fromRoot = false } = {}) {
   const pos = cagedPositions(strings, unit.rootPc, unit.quality, CAGED_FRET_LIMIT).filter((p) => p.id === unit.shape)[0];
   if (!pos) return null;
-  return { key: unit.key, kind, quality: unit.quality, shape: unit.shape, rootPc: unit.rootPc, pos, seq: playOrder(pos.arp) };
+  return { key: unit.key, kind, quality: unit.quality, shape: unit.shape, rootPc: unit.rootPc, pos, seq: fromRoot ? rootFirstOrder(playOrder(pos.arp)) : playOrder(pos.arp) };
 }

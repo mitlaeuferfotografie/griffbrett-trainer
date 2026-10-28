@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS = {
   improvPosition: 'auto', // Improvisieren: bevorzugte Lage 'auto' | 'low' | 'mid' | 'high'
   cagedRoot: 0, // CAGED: Grundton (Tonklasse)
   cagedQuality: 'major', // CAGED: 'major' | 'minor'
+  cagedFromRoot: false, // CAGED-Übung: Arpeggio vom Grundton aus (hoch, runter, zurück) statt ab dem tiefsten Ton
   cagedScale: 0, // CAGED, Schicht Tonleiter: 0 = Dur/Moll, 1 = Pentatonik
   homeHintDismissed: false, // Hinweis „Zum Home-Bildschirm“ ausgeblendet
   scaleColors: 'mono', // Tonarten: 'mono' (einfarbig, Grundton hervorgehoben) | 'degree' (Stufenfarben)

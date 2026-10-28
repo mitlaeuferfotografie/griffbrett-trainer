@@ -90,3 +90,16 @@ test('CAGED-Übung: Freischaltung nach Fortschritt, Lernstand alter Daten', () =
   assert.equal(cagedKey('major', 'E', 9), 'major:E:9');
   assert.deepEqual(normalizeProgress({}).caged, { units: {}, unlocked: 1 });
 });
+
+import { rootFirstOrder } from '../src/lib/caged.js';
+
+test('Vom Grundton aus: hoch, runter bis zum tiefsten Ton, zurück zum Grundton', () => {
+  const u = { key: 'major:C:0', quality: 'major', shape: 'C', rootPc: 0 };
+  const plain = makeCagedTask(STD, u, 'new').seq.map((n) => n.midi);
+  assert.deepEqual(plain, [40, 43, 48, 52, 55, 60, 64, 67]); // E G | C E G C E G
+  const t = makeCagedTask(STD, u, 'new', { fromRoot: true }).seq.map((n) => n.midi);
+  assert.deepEqual(t, [48, 52, 55, 60, 64, 67, 64, 60, 55, 52, 48, 43, 40, 43, 48]);
+  // Form beginnt schon mit dem Grundton → unverändert aufwärts
+  const e = makeCagedTask(STD, { key: 'major:E:0', quality: 'major', shape: 'E', rootPc: 0 }, 'new');
+  assert.deepEqual(rootFirstOrder(e.seq), e.seq);
+});
