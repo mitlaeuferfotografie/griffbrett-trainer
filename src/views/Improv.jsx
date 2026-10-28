@@ -7,12 +7,12 @@ import { noteName, pcName, pitchClass } from '../lib/notes.js';
 import { getTuning } from '../lib/tunings.js';
 import { positionsForMidi } from '../lib/fretboard.js';
 import { degreeLabel, getScale } from '../lib/scales.js';
-import { describePlaying, degreeWeights, shares, guessRoot, estimatePosition } from '../lib/analysis.js';
+import { describePlaying, degreeWeights, shares, guessRoot, estimatePath, POSITION_PREFS } from '../lib/analysis.js';
 import { addPractice, fmtSec } from '../lib/stats.js';
 import { startMic, setFastMode } from '../audio/mic.js';
 import { TRACKER_FAST } from '../audio/detector.js';
 import { useMicFrames, useTracker, useMicStatus } from '../ui/hooks.js';
-import { Card, Header, MicGate, Split, SelectField, namesOf } from '../ui/common.jsx';
+import { Card, Header, MicGate, Split, SelectField, Segmented, namesOf } from '../ui/common.jsx';
 import { Fretboard, fmtTime } from '../ui/board.jsx';
 
 const GENERIC = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
@@ -48,6 +48,9 @@ export function ImprovView({ settings, update, setProgress, onBack }) {
     return () => setFastMode(false);
   }, []);
   const [rootChoice, setRootChoice] = useState(settings.improvRoot ?? 'auto');
+  const posPref = settings.improvPosition || 'auto';
+  const posPrefRef = useRef(posPref);
+  posPrefRef.current = posPref;
   const [phase, setPhase] = useState('home'); // home | live | result
   const [events, setEvents] = useState([]);
   const [trail, setTrail] = useState([]); // geschätzte Positionen [{ string, fret, midi }]
@@ -69,13 +72,27 @@ export function ImprovView({ settings, update, setProgress, onBack }) {
     const midi = u.event.midi;
     const ev = { midi, time: frame.time };
     eventsRef.current = [...eventsRef.current, ev];
-    const cand = positionsForMidi(strings, midi, 24);
-    const pos = estimatePosition(cand, trailRef.current);
-    if (pos) trailRef.current = [...trailRef.current, { ...pos, midi }].slice(-TRAIL);
+    trailRef.current = estimateTrail(eventsRef.current, posPrefRef.current);
     if (startAt == null) setStartAt(frame.time);
     setEvents(eventsRef.current);
     setTrail(trailRef.current);
   });
+
+  // Lage über die letzten 16 Töne als Phrase schätzen (wenige Lagenwechsel, optional Vorgabe)
+  const estimateTrail = (evs, pref) => {
+    const recent = evs.slice(-16);
+    const path = estimatePath(recent.map((e) => e.midi), (m) => positionsForMidi(strings, m, 24), pref);
+    return path.map((p, i) => p && { ...p, midi: recent[i].midi }).filter(Boolean).slice(-TRAIL);
+  };
+  const choosePosition = (v) => {
+    update({ improvPosition: v });
+    posPrefRef.current = v;
+    trailRef.current = estimateTrail(eventsRef.current, v);
+    setTrail(trailRef.current);
+  };
+  const posOptions = Object.entries(POSITION_PREFS)
+    .filter(([k]) => k !== 'top')
+    .map(([value, p]) => ({ value, label: p.label }));
 
   const auto = rootChoice === 'auto';
   const liveRoot = auto ? (events.length >= 8 ? guessRoot(events) : null) : Number(rootChoice);
@@ -121,6 +138,11 @@ export function ImprovView({ settings, update, setProgress, onBack }) {
             Einstimmig spielen (keine Akkorde). Begleitung nur über Kopfhörer – sonst hört das Mikrofon sie mit.
           </p>
         </Card>
+        <div className="mb-3">
+          <p className="text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-1">Lage auf dem Griffbrett</p>
+          <Segmented options={posOptions} value={posPref} onChange={choosePosition} />
+          <p className="text-xs text-slate-500 mt-1">Derselbe Ton liegt an mehreren Stellen. „Auto“ schätzt die Lage aus deiner Phrase; spielst du meist hoch, wähle „Hoch“.</p>
+        </div>
         <div className="grid grid-cols-2 gap-2 mb-3">
           <SelectField label="Grundton" value={rootChoice} onChange={chooseRoot}>
             <option value="auto">Automatisch</option>
@@ -220,6 +242,11 @@ export function ImprovView({ settings, update, setProgress, onBack }) {
   const weights = liveRoot != null ? degreeWeights(events, liveRoot) : null;
   const currentCands = last ? positionsForMidi(strings, last.midi, 24) : [];
   const head = trail[trail.length - 1];
+  // Ausschnitt von 12 Bünden, der der gespielten Lage folgt
+  const played = trail.filter((p) => p.fret > 0).map((p) => p.fret);
+  const lo = played.length ? Math.min(...played) : 0;
+  const winFrom = Math.max(0, Math.min(lo - 2, 24 - 12));
+  const liveRange = [winFrom, winFrom + 12];
 
   return (
     <div>
@@ -253,10 +280,14 @@ export function ImprovView({ settings, update, setProgress, onBack }) {
           }
           right={
             <Card className="p-3 mt-4 landscape:mt-0">
+              <div className="mb-2">
+                <Segmented options={posOptions} value={posPref} onChange={choosePosition} />
+              </div>
               <p className="text-xs text-slate-400 mb-2 px-1">Geschätzte Lage (letzte {TRAIL} Töne), andere mögliche Stellen blass</p>
               <Fretboard
                 strings={strings}
                 fretMax={24}
+                range={liveRange}
                 names={names}
                 withOpen
                 size="sm"

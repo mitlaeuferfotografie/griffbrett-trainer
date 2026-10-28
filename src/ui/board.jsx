@@ -35,10 +35,11 @@ const SIZES = {
  * onCell(string, fret) macht Bundfelder antippbar (enabled(string, fret) schränkt ein).
  * withOpen: zusätzlich Bund 0 (Leersaiten) links vom Sattel.
  * highlightString: diese Saite farbig hervorheben (z. B. die gefragte Saite).
+ * range: [von, bis] zeigt nur diesen Ausschnitt (z. B. der gespielten Lage folgend).
  */
-export function Fretboard({ strings, fretMax, names, cell, onCell, enabled, size = 'md', withOpen = false, highlightString = null }) {
+export function Fretboard({ strings, fretMax, names, cell, onCell, enabled, size = 'md', withOpen = false, highlightString = null, range = null }) {
   const sz = SIZES[size] || SIZES.md;
-  const parts = fretMax > 12 ? [[withOpen ? 0 : 1, 12], [13, fretMax]] : [[withOpen ? 0 : 1, fretMax]];
+  const parts = range ? [range] : fretMax > 12 ? [[withOpen ? 0 : 1, 12], [13, fretMax]] : [[withOpen ? 0 : 1, fretMax]];
   return (
     <div className="select-none space-y-3">
       {parts.map(([from, to]) => (

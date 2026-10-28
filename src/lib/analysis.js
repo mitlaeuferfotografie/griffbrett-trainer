@@ -162,3 +162,87 @@ export function estimatePosition(candidates, recent) {
     (a, b) => Math.abs(a.fret - meanFret) + Math.abs(a.string - lastString) * 0.6 - (Math.abs(b.fret - meanFret) + Math.abs(b.string - lastString) * 0.6),
   )[0];
 }
+
+// ---------- Lage über eine ganze Phrase schätzen ----------
+// Derselbe Ton liegt an mehreren Stellen (tiefe E-Saite Bund 12 = A-Saite Bund 7 = D-Saite
+// Bund 2). Am Klang allein ist das nicht zu unterscheiden. Daher: den Weg durch die letzten
+// Töne suchen, der mit möglichst wenigen Lagenwechseln auskommt (eine Hand spannt ca. 4 Bünde),
+// optional mit Vorliebe für eine Lage (Einstellung „Lage“).
+
+export const POSITION_PREFS = {
+  auto: { label: 'Auto', center: null },
+  low: { label: 'Tief', center: 3 },
+  mid: { label: 'Mittel', center: 8 },
+  high: { label: 'Hoch', center: 13 },
+  top: { label: 'Sehr hoch', center: 18 },
+};
+
+const SPAN = 4; // eine Lage deckt Bund p … p+4 ab
+const MAX_POS = 20;
+
+function shiftCost(q, p) {
+  return q === p ? 0 : 0.6 + 0.15 * Math.abs(q - p);
+}
+
+function positionPrior(p, center) {
+  // Automatik: ganz hohe Lagen sind seltener – bei Gleichstand die übliche Lage
+  if (center == null) return Math.max(0, p - 13) * 0.1;
+  return Math.max(0, Math.abs(p + 2 - center) - 2) * 0.3;
+}
+
+const inWindow = (c, p) => c.fret === 0 || (c.fret >= p && c.fret <= p + SPAN);
+
+/**
+ * Wahrscheinlichste Positionen für eine Tonfolge. Modell: Die Hand steht in einer Lage p
+ * (Bund p … p+4, Leersaiten immer), Lagenwechsel kosten; gesucht ist die Lagenfolge mit den
+ * geringsten Kosten (Viterbi), optional mit Vorliebe für eine Lage (POSITION_PREFS).
+ * midis: [MIDI], candidatesFor(midi) → [{ string, fret }].
+ * Rückgabe: [{ string, fret }] gleicher Länge (null, wenn ein Ton nirgends spielbar ist).
+ */
+export function estimatePath(midis, candidatesFor, prefer = 'auto') {
+  const center = (POSITION_PREFS[prefer] || POSITION_PREFS.auto).center;
+  const cands = midis.map((m) => candidatesFor(m));
+  const P = MAX_POS + 1;
+  let dp = Array.from({ length: P }, (_, p) => positionPrior(p, center));
+  const back = [];
+  cands.forEach((cs, i) => {
+    if (!cs.length) {
+      back.push(null);
+      return;
+    }
+    const next = new Array(P).fill(Infinity);
+    const bp = new Array(P).fill(0);
+    for (let p = 0; p < P; p++) {
+      if (!cs.some((c) => inWindow(c, p))) continue;
+      let best = Infinity;
+      let arg = p;
+      for (let q = 0; q < P; q++) {
+        const v = dp[q] + (i === 0 ? (q === p ? 0 : Infinity) : shiftCost(q, p));
+        if (v < best) {
+          best = v;
+          arg = q;
+        }
+      }
+      next[p] = best + positionPrior(p, center) * 0.2;
+      bp[p] = arg;
+    }
+    if (next.every((v) => v === Infinity)) {
+      back.push(null);
+      return;
+    }
+    dp = next;
+    back.push(bp);
+  });
+  // Rückverfolgung der Lagen
+  const out = new Array(midis.length).fill(null);
+  let p = dp.indexOf(Math.min(...dp));
+  for (let i = midis.length - 1; i >= 0; i--) {
+    if (!back[i]) continue;
+    const cs = cands[i].filter((c) => inWindow(c, p));
+    // innerhalb der Lage: gegriffene Töne vor Leersaiten, möglichst mittig
+    cs.sort((a, b) => (a.fret === 0) - (b.fret === 0) || Math.abs(a.fret - (p + 2)) - Math.abs(b.fret - (p + 2)));
+    out[i] = cs[0] || null;
+    p = back[i][p];
+  }
+  return out;
+}

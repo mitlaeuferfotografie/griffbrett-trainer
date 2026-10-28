@@ -84,3 +84,28 @@ test('Positionsschätzung bleibt in der Lage', () => {
   assert.deepEqual(estimatePosition(cands, recent), { string: 2, fret: 7 });
   assert.equal(estimatePosition(cands, []).fret, Math.min(...cands.map((c) => c.fret)));
 });
+
+import { estimatePath } from '../src/lib/analysis.js';
+const cand = (m) => positionsForMidi(STD, m, 24);
+
+test('Phrase um den 12. Bund über zwei Oktaven wird oben erkannt (nicht in den ersten Bünden)', () => {
+  // A-Moll-Pentatonik, Box in der 12. Lage
+  const phrase = [57, 60, 62, 64, 67, 69, 72, 74, 76, 79, 76, 74, 72, 69, 67];
+  const path = estimatePath(phrase, cand, 'auto');
+  assert.ok(path.every((p) => p.fret >= 10 && p.fret <= 17), JSON.stringify(path));
+});
+
+test('Mehrdeutige Phrase: Vorgabe „Hoch“ bzw. „Tief“ entscheidet', () => {
+  const phrase = [52, 55, 57, 60, 62, 64]; // passt tief (Bund 0–5) und hoch (Bund 12–15)
+  const high = estimatePath(phrase, cand, 'high');
+  assert.ok(high.every((p) => p.fret >= 9), JSON.stringify(high));
+  const low = estimatePath(phrase, cand, 'low');
+  assert.ok(low.every((p) => p.fret <= 7), JSON.stringify(low));
+});
+
+test('Weg bleibt in einer Hand-Lage statt zu springen', () => {
+  const phrase = [45, 47, 48, 50, 52, 53];
+  const path = estimatePath(phrase, cand, 'mid');
+  const frets = path.map((p) => p.fret);
+  assert.ok(Math.max(...frets) - Math.min(...frets) <= 5, JSON.stringify(path));
+});

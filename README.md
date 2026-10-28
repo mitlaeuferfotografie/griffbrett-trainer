@@ -62,7 +62,8 @@ Ein Grundton wird auf dem Griffbrett gezeigt (mit Name und Saite), gefragt ist z
 ### Improvisieren – Ausbaustufe 3 (`src/lib/analysis.js`, `src/views/Improv.jsx`)
 „Was spiele ich da eigentlich?“ – frei spielen, die App hört mit.
 - **Grundton** wählen oder **automatisch** erkennen lassen (beste Passung Grundton × Tonleiter, bei Gleichstand der häufigste Ton).
-- **Live:** aktuelle Stufe groß (Grundton gelb), Stufenverteilung als Balken, Griffbrett mit der **geschätzten Lage** der letzten 8 Töne (Kandidat, der den letzten Positionen am nächsten liegt) und den übrigen möglichen Stellen blass.
+- **Live:** aktuelle Stufe groß (Grundton gelb), Stufenverteilung als Balken, Griffbrett mit der **geschätzten Lage** der letzten 8 Töne und den übrigen möglichen Stellen blass. Das Griffbrett zeigt einen Ausschnitt von 12 Bünden, der der gespielten Lage folgt.
+- **Lage-Schätzung** (`estimatePath`): Derselbe Ton liegt an mehreren Stellen, am Klang nicht unterscheidbar. Modell: Die Hand steht in einer Lage (Bund p…p+4, Leersaiten immer), Lagenwechsel kosten; über die letzten 16 Töne wird die Lagenfolge mit den geringsten Kosten gesucht. Hohe Töne einer Phrase ziehen so die ganze Phrase nach oben. **Lage-Vorgabe** Auto / Tief / Mittel / Hoch (auch live umschaltbar) entscheidet bei mehrdeutigen Phrasen.
 - **Auswertung in Klartext**, z. B. „Du hast überwiegend Moll-Pentatonik gespielt, mit der großen Sexte (6) als Farbton. Das klingt dorisch.“; Dur-/Moll-Charakter (Terz), Töne außerhalb (Blue Notes, chromatische Durchgänge), **nie gespielte Töne** der passenden Tonleiter; Balken und Griffbrett „gespielt / nie gespielt“.
 - Töne werden nach **Dauer gewichtet** (0,15–1,5 s), damit Durchgänge weniger zählen als gehaltene Töne. Pentatonik gilt als „überwiegend“, wenn ≥ 75 % der Töne darin liegen.
 - Aufgezeichnet werden nur erkannte Tonhöhen mit Zeitpunkt, kein Audio. Zählt nicht im Lernstand (nur Übungszeit). Einstimmig spielen; Begleitung nur über Kopfhörer.
