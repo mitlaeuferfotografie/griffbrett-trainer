@@ -29,6 +29,8 @@ Private Gitarren-App für einen erwachsenen, ausgebildeten Musiker (E-Gitarre, s
 - `curriculum.js`: Freischaltung bei ≥ 80 % „wird“ und ≥ 50 % „sitzt“, bleibt freigeschaltet.
 - `session.js`: Mischung 70/20/10, Arbeitsmenge 5 „unsichere“ Positionen, max. 12 neue pro Session, Fehler kommen nach 3 Aufgaben wieder.
 - `intervals.js` (Ausbaustufe 2): Lerneinheit = Form `"<halbtöne>:<saiten>:<bünde>"` (nie ändern), nur |Bundabstand| ≤ 4, Saitenwechsel 0/+1/+2, Gruppen Oktave+Quinte → Quarte+Terzen → 2/♭7/6 → Rest. Eigener Lernstand `progress.intervals` (units + unlocked je Stimmung). Aufgaben über `pickTask(..., make)`.
+- Abwärts-Intervalle meinen die **Stufe** in der tieferen Oktave („5 darunter“ = Quarte tiefer); Anzeige „Stufe 5 darunter · Quarte abwärts“.
+- `scales.js`: Schreibweise über Stammton + Stufennummer (nie über Tonklassen raten); bei schwarzen Grundtönen weniger Vorzeichen gewinnt. „Stufen finden“ (Tonarten) zählt nicht im Lernstand.
 - Challenge und „Fallende Töne“ zählen nicht im Lernstand (Zeitdruck), nur als Übungszeit. „Ein Ton – alle Saiten“ zählt normal.
 - `arcade.js`: Fallzeit 6 s → ca. 1,5 s über 10 Stufen, +1 Stufe je 8 Treffer, −1 nach 2 verpassten in Folge, Zonen 0,6/0,85/1,15, 5 Leben.
 - Änderungen hier: Tests in `tests/learning.test.mjs`, `tests/arcade.test.mjs` bzw. `tests/intervals.test.mjs` anpassen/ergänzen.

@@ -20,6 +20,10 @@ export const DEFAULT_SETTINGS = {
   showGoals: true, // Tagesziel und Wochenziel
   showBests: true, // Bestwerte und Meilensteine
   theme: 'dark', // 'dark' | 'light'
+  intervalDir: 'both', // Intervalle: 'both' | 'up' | 'down'
+  intervalRootFirst: false, // Intervalle: erst Grundton, dann Intervall spielen
+  scaleRoot: 7, // Tonarten: zuletzt gewählter Grundton (Tonklasse, 7 = G)
+  scaleId: 'major', // Tonarten: zuletzt gewählte Skala
   micExplained: false,
 };
 

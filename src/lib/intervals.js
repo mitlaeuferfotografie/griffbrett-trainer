@@ -1,16 +1,21 @@
 // Ausbaustufe 2: Intervalle als Griff-Formen.
 //
-// Lerneinheit = Form: Intervall (Halbtöne) × Saitenwechsel (0, +1, +2) × Bundabstand.
-// Schlüssel "<halbtöne>:<saiten>:<bunde>", z. B. "7:1:2" = Quinte eine Saite höher, zwei
-// Bünde weiter. Der Bundabstand macht die Form eindeutig – auch den Sonderfall
-// G→H-Saite (große Terz statt Quarte zwischen den Saiten), der eine eigene Form ergibt.
+// Lerneinheit = Form: Intervall (Halbtöne, mit Vorzeichen) × Saitenwechsel × Bundabstand.
+// Schlüssel "<halbtöne>:<saiten>:<bünde>", z. B. "7:1:2" = Quinte eine Saite höher, zwei
+// Bünde weiter; "-5:-1:0" = Quinte darunter (Stufe 5 der tieferen Oktave), eine Saite
+// tiefer, gleicher Bund. Der Bundabstand macht die Form eindeutig – auch den Sonderfall
+// G→H-Saite, der eine eigene Form ergibt.
+//
+// Aufwärts: Zielton = Grundton + Intervall (Saitenwechsel 0, +1, +2).
+// Abwärts („♭7 darunter“): dieselbe Stufe eine Oktave tiefer, also Grundton − (12 − Intervall),
+// bei der Oktave Grundton − 12 (Saitenwechsel 0, −1, −2).
 // Nur Formen innerhalb einer Hand-Lage (|Bundabstand| ≤ MAX_STRETCH).
 import { pitchClass } from './notes.js';
 import { status, STATUS_ORDER } from './srs.js';
 import { UNLOCK_WIRD, UNLOCK_SITZT } from './curriculum.js';
 
 export const MAX_STRETCH = 4;
-export const STRING_OFFSETS = [0, 1, 2];
+const OFFSETS = { up: [0, 1, 2], down: [0, -1, -2] };
 
 export const INTERVALS = [
   { semis: 1, degree: '♭2', name: 'kleine Sekunde' },
@@ -27,17 +32,35 @@ export const INTERVALS = [
   { semis: 12, degree: '8', name: 'Oktave' },
 ];
 
-export function intervalInfo(semis) {
-  return INTERVALS.find((i) => i.semis === semis);
+/** Stufe (1 … 12 Halbtöne) zu einem vorzeichenbehafteten Abstand. */
+export function degreeSemis(semis) {
+  if (semis > 0) return semis;
+  return semis === -12 ? 12 : semis + 12;
 }
 
-/** Progressive Einführung: welche Intervalle in welcher Stufe dazukommen. */
+export function intervalInfo(semis) {
+  return INTERVALS.find((i) => i.semis === degreeSemis(semis));
+}
+
+/**
+ * Anzeige: { degree: '♭7', name: 'kleine Septime', down: true, distance: 'große Sekunde abwärts' }
+ * Abwärts ist die Stufe gemeint (♭7 darunter = Ganzton tiefer), distance nennt den Abstand.
+ */
+export function shapeInfo(semis) {
+  const i = intervalInfo(semis);
+  const down = semis < 0;
+  return { degree: i.degree, name: i.name, down, distance: down ? `${INTERVALS.find((x) => x.semis === -semis).name} abwärts` : i.name };
+}
+
+/** Progressive Einführung: welche Stufen in welcher Gruppe dazukommen (jeweils auf- und abwärts). */
 export const INTERVAL_GROUPS = [
   { id: 'i1', semis: [12, 7], label: 'Oktave & Quinte' },
   { id: 'i2', semis: [5, 4, 3], label: 'Quarte & Terzen' },
   { id: 'i3', semis: [2, 10, 9], label: 'Sekunde, kleine Septime, große Sexte' },
   { id: 'i4', semis: [11, 1, 8, 6], label: 'Große Septime, kleine Sekunde, kleine Sexte, Tritonus' },
 ];
+
+export const DIRECTIONS = ['both', 'up', 'down'];
 
 export function shapeKey(semis, offset, fretDelta) {
   return `${semis}:${offset}:${fretDelta}`;
@@ -48,17 +71,25 @@ export function parseShapeKey(key) {
   return { semis, offset, fretDelta };
 }
 
-/** Alle Formen, die es in dieser Stimmung gibt, mit den Saitenpaaren, auf denen sie vorkommen. */
-export function shapesFor(strings) {
+function signedSteps(dir) {
+  const up = INTERVALS.map((i) => i.semis);
+  const down = INTERVALS.map((i) => (i.semis === 12 ? -12 : i.semis - 12));
+  return dir === 'up' ? up : dir === 'down' ? down : [...up, ...down];
+}
+
+/** Alle Formen dieser Stimmung (Richtung 'both' | 'up' | 'down'), mit möglichen Grundton-Saiten. */
+export function shapesFor(strings, dir = 'both') {
   const map = new Map();
-  for (const { semis } of INTERVALS) {
-    for (const offset of STRING_OFFSETS) {
-      for (let s = 0; s + offset < strings.length; s++) {
-        const fretDelta = semis - (strings[s + offset] - strings[s]);
+  for (const semis of signedSteps(dir)) {
+    for (const offset of semis > 0 ? OFFSETS.up : OFFSETS.down) {
+      if (offset === 0 && Math.abs(semis) === 12) continue; // Oktave auf derselben Saite = 12 Bünde
+      for (let s = 0; s < strings.length; s++) {
+        const t = s + offset;
+        if (t < 0 || t >= strings.length) continue;
+        const fretDelta = semis - (strings[t] - strings[s]);
         if (Math.abs(fretDelta) > MAX_STRETCH) continue;
-        if (offset === 0 && semis === 12) continue; // Oktave auf derselben Saite = 12 Bünde
         const key = shapeKey(semis, offset, fretDelta);
-        if (!map.has(key)) map.set(key, { key, semis, offset, fretDelta, rootStrings: [] });
+        if (!map.has(key)) map.set(key, { key, semis, deg: degreeSemis(semis), offset, fretDelta, rootStrings: [] });
         map.get(key).rootStrings.push(s);
       }
     }
@@ -66,15 +97,15 @@ export function shapesFor(strings) {
   return [...map.values()];
 }
 
-/** Aktive Formen (freigeschaltete Intervall-Gruppen), mit Gruppenindex für die Einführung. */
-export function activeShapes(strings, unlocked) {
-  const shapes = shapesFor(strings);
+/** Aktive Formen (freigeschaltete Gruppen) mit Gruppenindex für die Einführung. */
+export function activeShapes(strings, unlocked, dir = 'both') {
+  const shapes = shapesFor(strings, dir);
   const out = [];
   INTERVAL_GROUPS.slice(0, unlocked).forEach((g, gi) => {
-    for (const semis of g.semis) {
+    for (const deg of g.semis) {
       shapes
-        .filter((sh) => sh.semis === semis)
-        .sort((a, b) => a.offset - b.offset || Math.abs(a.fretDelta) - Math.abs(b.fretDelta))
+        .filter((sh) => sh.deg === deg)
+        .sort((a, b) => b.semis - a.semis || Math.abs(a.offset) - Math.abs(b.offset) || Math.abs(a.fretDelta) - Math.abs(b.fretDelta))
         .forEach((sh) => out.push({ ...sh, group: gi }));
     }
   });
@@ -86,19 +117,19 @@ function share(shapes, units, min) {
   return shapes.filter((s) => STATUS_ORDER[status(units[s.key])] >= STATUS_ORDER[min]).length / shapes.length;
 }
 
-export function computeIntervalUnlocked(strings, units, stored = 1) {
+export function computeIntervalUnlocked(strings, units, stored = 1, dir = 'both') {
   let n = Math.max(1, stored || 1);
   while (n < INTERVAL_GROUPS.length) {
-    const sh = activeShapes(strings, n);
+    const sh = activeShapes(strings, n, dir);
     if (share(sh, units, 'wird') >= UNLOCK_WIRD && share(sh, units, 'sitzt') >= UNLOCK_SITZT) n++;
     else break;
   }
   return n;
 }
 
-export function intervalUnlockProgress(strings, units, unlocked) {
+export function intervalUnlockProgress(strings, units, unlocked, dir = 'both') {
   if (unlocked >= INTERVAL_GROUPS.length) return null;
-  const sh = activeShapes(strings, unlocked);
+  const sh = activeShapes(strings, unlocked, dir);
   return {
     next: INTERVAL_GROUPS[unlocked],
     value: Math.min(1, share(sh, units, 'wird') / UNLOCK_WIRD, share(sh, units, 'sitzt') / UNLOCK_SITZT),
@@ -143,5 +174,12 @@ export function judgeInterval(strings, task, midi) {
 }
 
 export function offsetLabel(offset) {
-  return offset === 0 ? 'gleiche Saite' : offset === 1 ? 'eine Saite höher' : 'zwei Saiten höher';
+  return ['zwei Saiten tiefer', 'eine Saite tiefer', 'gleiche Saite', 'eine Saite höher', 'zwei Saiten höher'][offset + 2];
+}
+
+/** Kurzform für Kästchen: "+1 +2" = eine Saite höher, zwei Bünde weiter */
+export function shapeShort(shape) {
+  const o = shape.offset === 0 ? '=' : shape.offset > 0 ? `+${shape.offset}` : `−${-shape.offset}`;
+  const f = shape.fretDelta === 0 ? '0' : shape.fretDelta > 0 ? `+${shape.fretDelta}` : `−${-shape.fretDelta}`;
+  return `${o} ${f}`;
 }

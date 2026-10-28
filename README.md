@@ -15,7 +15,8 @@ Privates Projekt, **nicht** auf der Übersichtsseite der Lern-Apps eingetragen.
 | **Version 1:** Ton finden, adaptive Wiederholung, Heatmap, Session, Gamification, Export/Import, Hell-Modus, Offline | fertig (28.10.2026), Praxistest am iPhone steht aus |
 | Übung „Fallende Töne“ (Timing, steigendes Tempo) | fertig (28.10.2026) |
 | Impressum & Datenschutz | fertig |
-| **Ausbaustufe 2:** Intervalle als Griff-Formen | erste Version fertig (28.10.2026), Praxistest steht aus |
+| **Ausbaustufe 2:** Intervalle als Griff-Formen (auf- und abwärts, „Grundton zuerst“) | fertig (28.10.2026), Praxistest steht aus |
+| Tonarten-Übersicht (Griffbrett bis Bund 24) + Übung „Stufen finden“ | fertig (28.10.2026) |
 | Ausbaustufe 3 | Roadmap |
 
 ## Funktionen
@@ -40,13 +41,22 @@ Ein Ton (gewählt oder zufällig) nacheinander auf allen Saiten von tief nach ho
 Alle natürlichen Töne einer Saite (Bund 1–12) in zufälliger Reihenfolge auf Zeit, mit Bestzeit pro Saite. Falsche Töne kosten nur Zeit. Freiwillig, nur mit Mikrofon, **zählt nicht im Lernstand**, damit Zeitdruck die adaptive Wiederholung nicht verfälscht.
 
 ### Intervalle – Ausbaustufe 2 (`src/lib/intervals.js`, `src/views/Intervals.jsx`)
-Ein Grundton wird auf dem Griffbrett gezeigt (mit Name und Saite), gefragt ist z. B. **„♭3 · kleine Terz · eine Saite höher“**. Gespielt wird nur der Zielton; richtig ist nur **genau** dieser Ton (eine Oktave daneben zählt nicht).
-- **Lerneinheit = Griff-Form:** Intervall × Saitenwechsel (gleiche Saite, +1, +2) × Bundabstand, Schlüssel `"<halbtöne>:<saiten>:<bünde>"`. Dadurch ist der Sonderfall G→H-Saite eine eigene Form (z. B. Quinte eine Saite höher: normal +2 Bünde, über G→H +3).
-- Nur Formen innerhalb einer Hand-Lage (Bundabstand ≤ 4), auf der gleichen Saite also bis zur großen Terz. In Standardstimmung 36 Formen.
+Ein Grundton wird auf dem Griffbrett gezeigt (mit Name und Saite), gefragt ist z. B. **„♭3 · kleine Terz · eine Saite höher“** oder abwärts **„↓ ♭7 · Stufe ♭7 darunter · große Sekunde abwärts“**. Gespielt wird der Zielton; richtig ist nur **genau** dieser Ton (eine Oktave daneben zählt nicht).
+- **Richtung** auf der Startseite: aufwärts, abwärts oder beides (Standard). Abwärts ist die **Stufe** gemeint: „5 darunter“ = die 5 der tieferen Oktave, also eine Quarte tiefer; Saitenwechsel gleiche Saite, 1 oder 2 Saiten tiefer.
+- **Grundton zuerst** (Option): erst den Grundton spielen, dann das Intervall – trainiert das Hören; die Reaktionszeit zählt ab dem Grundton.
+- **Lerneinheit = Griff-Form:** Intervall (mit Vorzeichen, abwärts negativ) × Saitenwechsel × Bundabstand, Schlüssel `"<halbtöne>:<saiten>:<bünde>"`, z. B. `7:1:2`, `-5:-1:0`. Dadurch ist der Sonderfall G→H-Saite eine eigene Form (z. B. Quinte eine Saite höher: normal +2 Bünde, über G→H +3).
+- Nur Formen innerhalb einer Hand-Lage (Bundabstand ≤ 4), auf der gleichen Saite also bis zur großen Terz. In Standardstimmung je Richtung gut drei Dutzend Formen.
 - **Progressive Einführung:** Oktave & Quinte → Quarte & Terzen → große Sekunde, kleine Septime, große Sexte → große Septime, kleine Sekunde, kleine Sexte, Tritonus. Freischaltung durch Können wie bei „Ton finden“.
 - Gleiche Lernlogik (Leitner-Boxen mit Reaktionszeit, Mischung fällig/neu/Wiederholung, Arbeitsmenge), eigener Lernstand `progress.intervals`.
 - Übersicht aller Formen (Zeilen = Intervalle, Kästchen = Saitenwechsel + Bundabstand, eingefärbt nach Status) auf der Startseite und in der Zusammenfassung.
 - Antipp-Modus: Zielbund auf der Zielsaite antippen. Meilensteine je Intervall-Gruppe.
+
+### Tonarten (`src/lib/scales.js`, `src/views/Scales.jsx`)
+- Grundton (12) und Tonart wählen: **Dur, Moll (natürlich), harmonisch und melodisch Moll, Dur- und Moll-Pentatonik, Blues, Dorisch, Phrygisch, Lydisch, Mixolydisch, Lokrisch**.
+- **Ganzes Griffbrett bis Bund 24** (umschaltbar auf 12) inklusive Leersaiten, dicke Saite links: Töne der Tonart farbig mit **Stufe** (oder Tonname), alles andere ausgegraut. Farben mit Bedeutung: Grundton indigo, Terz grün, Quinte gelb, übrige Stufen grau.
+- Tonart-Kopf: Name („G-Dur“, „e-Moll“, „D Dorisch“), Vorzeichen in Quintenzirkel-Reihenfolge („2 ♯: Fis, Cis“), Umschalter zur **Paralleltonart**, alle Töne mit Stufe. Antippen einer Stufe blendet sie auf dem Griffbrett aus (z. B. nur Grundtöne zeigen).
+- **Korrekte Schreibweise:** G-Dur hat Fis, F-Dur hat B; bei schwarzen Grundtönen gewinnt die Variante mit weniger Vorzeichen (Des-Dur statt Cis-Dur, fis-Moll statt ges-Moll; Gleichstand nach Vorzeichen-Einstellung).
+- **Übung „Stufen finden“**: 10 Aufgaben wie „6 in G-Dur auf der D-Saite“, Mikrofon oder Antippen, Rückmeldung mit Stufe, Tonname und Bund. Zählt nicht im Lernstand.
 
 ### Fallende Töne (`src/lib/arcade.js`, `src/views/Arcade.jsx`)
 Töne fallen in der Spur ihrer Saite (dicke Saite links) auf eine Trefferlinie zu und müssen im richtigen Moment gespielt werden.
@@ -119,7 +129,7 @@ src/
   App.jsx              Menü, Navigation, Datenhaltung (settings + progress), Theme
   index.js             Einstieg, Service-Worker-Registrierung
   tailwind-input.css   Tailwind, Farbvariablen (dunkel/hell), Safe Area
-  views/               Training (Session + Zusammenfassung), OneNote, Challenge, Arcade, Intervals, Progress,
+  views/               Training (Session + Zusammenfassung), OneNote, Challenge, Arcade, Intervals, Scales, Progress,
                        Tuner, Diagnose, Settings, Legal (Impressum & Datenschutz)
   ui/
     common.jsx         Card, Header, Segmented, LevelMeter, MicGate (Mikrofon-Zugang)
@@ -143,7 +153,8 @@ src/
     session.js         Aufgabenwahl, Prüflogik (Tonklasse + Lage)
     stats.js           Übungstage, Wochenziel, Bestwerte, Meilensteine, Zusammenfassung
     arcade.js          „Fallende Töne“: Tempo, Timing-Zonen, Punkte, Stufen, Tonvorrat
-    intervals.js       Ausbaustufe 2: Intervall-Formen, Einführung, Aufgaben, Prüfung
+    intervals.js       Ausbaustufe 2: Intervall-Formen (auf/ab), Einführung, Aufgaben, Prüfung
+    scales.js          Tonarten/Skalen: Stufen, Schreibweise, Vorzeichen, Paralleltonart
     storage.js         localStorage, Export/Import
 public/                index.html, manifest.json, sw.js, icons/
 scripts/               build.mjs, serve.mjs (lokaler Server), make-icons.mjs
@@ -173,8 +184,8 @@ npm run icons     # Icons neu erzeugen
 - Ggf. Reaktionszeit-Schwelle pro Saite/Lage anpassen (hohe Lagen brauchen länger).
 
 ### Ausbaustufe 2: weitere Schritte
-- Intervalle **abwärts** (z. B. „♭7 darunter“) und Formen mit Saitenwechsel nach unten.
-- Grundton zuerst anspielen lassen (Hörbezug), danach das Intervall.
+- Tonarten-Ansicht um **Lagen/CAGED-Fenster** erweitern (nur Bund x–y hervorheben).
+- Übung „Tonleiter in einer Lage spielen“ (Tonfolge auf- und abwärts mit Mikrofon prüfen).
 - Dreiklänge/Arpeggien in den fünf CAGED-Formen, Tonleiter-Formen (Dur, Moll, Pentatonik, Modes) als Stufenfolgen – aufbauend auf den Intervall-Formen.
 
 _Ursprüngliche Idee:_ Grundton setzen, Aufgaben wie „kleine Terz“, „Quinte auf der nächsthöheren Saite“, „♭7 darunter“. Lerneinheit = Intervall × Saitenwechsel. Später Dreiklänge/Arpeggien in CAGED-Formen, Tonleitern und Modes als Stufenfolgen. Bausteine: `session.js` (Aufgabe/Prüfung), `srs.js` (Lernstand), `board.jsx` (Griffbrett).

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  shapesFor, activeShapes, makeIntervalTask, judgeInterval, computeIntervalUnlocked, intervalUnlockProgress,
+  shapesFor, activeShapes, shapeInfo, offsetLabel, degreeSemis, makeIntervalTask, judgeInterval, computeIntervalUnlocked, intervalUnlockProgress,
   INTERVAL_GROUPS, MAX_STRETCH, parseShapeKey,
 } from '../src/lib/intervals.js';
 import { newUnit } from '../src/lib/srs.js';
@@ -27,8 +27,9 @@ test('Formen: Oktave zwei Saiten höher +2 Bünde bzw. +3 über die H-Saite', ()
 
 test('Nur Formen innerhalb einer Hand-Lage', () => {
   for (const s of shapesFor(STD)) assert.ok(Math.abs(s.fretDelta) <= MAX_STRETCH);
-  // gleiche Saite: nur bis zur Quarte
-  assert.deepEqual([...new Set(shapesFor(STD).filter((s) => s.offset === 0).map((s) => s.semis))].sort((a, b) => a - b), [1, 2, 3, 4]);
+  // gleiche Saite aufwärts: nur bis zur großen Terz; abwärts entsprechend 7, ♭7, 6, ♭6 darunter
+  assert.deepEqual([...new Set(shapesFor(STD, 'up').filter((s) => s.offset === 0).map((s) => s.semis))].sort((a, b) => a - b), [1, 2, 3, 4]);
+  assert.deepEqual([...new Set(shapesFor(STD, 'down').filter((s) => s.offset === 0).map((s) => s.semis))].sort((a, b) => a - b), [-4, -3, -2, -1]);
 });
 
 test('7-Saiter: tiefe H-Saite → E-Saite ist eine Quarte wie E→A', () => {
@@ -39,13 +40,15 @@ test('7-Saiter: tiefe H-Saite → E-Saite ist eine Quarte wie E→A', () => {
 test('Einführung: erst Oktave und Quinte', () => {
   const a = activeShapes(STD, 1);
   assert.ok(a.length > 0);
-  assert.ok(a.every((s) => s.semis === 12 || s.semis === 7));
+  assert.ok(a.every((s) => s.deg === 12 || s.deg === 7));
+  assert.ok(a.some((s) => s.semis < 0), 'auch abwärts');
+  assert.ok(activeShapes(STD, 1, 'up').every((s) => s.semis > 0));
   assert.equal(activeShapes(STD, INTERVAL_GROUPS.length).length, shapesFor(STD).length);
 });
 
 test('Aufgabe: Grund- und Zielton im Bundbereich, Zielton = Grundton + Intervall', () => {
   const rand = mulberry32(4);
-  for (const shape of shapesFor(STD)) {
+  for (const shape of shapesFor(STD, 'both')) {
     for (let i = 0; i < 20; i++) {
       const t = makeIntervalTask(STD, shape, 12, rand);
       assert.ok(t, shape.key);
@@ -74,4 +77,33 @@ test('Freischaltung der Intervall-Gruppen durch Können', () => {
   assert.equal(computeIntervalUnlocked(STD, units, 1), 2);
   assert.equal(intervalUnlockProgress(STD, {}, 1).next.id, 'i2');
   assert.equal(intervalUnlockProgress(STD, {}, INTERVAL_GROUPS.length), null);
+});
+
+test('Abwärts: „5 darunter“ eine Saite tiefer = gleicher Bund (Quarte zwischen den Saiten)', () => {
+  const sh = shapesFor(STD, 'down').find((x) => x.semis === -5 && x.offset === -1 && x.fretDelta === 0);
+  assert.ok(sh);
+  assert.equal(sh.deg, 7);
+  assert.deepEqual(sh.rootStrings, [1, 2, 3, 5]); // A→E, D→A, G→D, hohe E→H (H→G ist nur eine große Terz)
+  const t = makeIntervalTask(STD, sh, 12, () => 0); // Grundton A-Saite Bund 1 (B), 5 darunter = E (tiefe E-Saite Bund 1)
+  assert.equal(t.targetMidi, t.rootMidi - 5);
+  assert.equal(t.string, 0);
+  assert.equal(STD[t.string] + t.fret, t.targetMidi);
+});
+
+test('Abwärts: Oktave darunter zwei Saiten tiefer, ♭7 darunter = Ganzton tiefer', () => {
+  assert.ok(shapesFor(STD, 'down').some((x) => x.semis === -12 && x.offset === -2));
+  assert.equal(degreeSemis(-2), 10);
+  assert.deepEqual(shapeInfo(-2), { degree: '♭7', name: 'kleine Septime', down: true, distance: 'große Sekunde abwärts' });
+  assert.equal(shapeInfo(-5).distance, 'Quarte abwärts', 'Stufe 5 darunter = Quarte tiefer');
+  assert.equal(shapeInfo(-12).distance, 'Oktave abwärts');
+  assert.equal(shapeInfo(7).distance, 'Quinte');
+  assert.equal(offsetLabel(-1), 'eine Saite tiefer');
+  assert.equal(offsetLabel(2), 'zwei Saiten höher');
+});
+
+test('Richtung: Aufwärts-Schlüssel bleiben unverändert (Lernstand gültig)', () => {
+  const up = shapesFor(STD, 'up').map((x) => x.key);
+  assert.ok(up.includes('7:1:2'));
+  assert.ok(up.every((k) => !k.startsWith('-')));
+  assert.equal(shapesFor(STD).length, shapesFor(STD, 'up').length + shapesFor(STD, 'down').length);
 });

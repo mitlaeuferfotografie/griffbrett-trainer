@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Gauge, Activity, Settings, Play, BarChart3, Layers, Timer, HardDriveDownload, ArrowDownToLine, Shapes } from 'lucide-react';
+import { Gauge, Activity, Settings, Play, BarChart3, Layers, Timer, HardDriveDownload, ArrowDownToLine, Shapes, Music } from 'lucide-react';
 import { startMic } from './audio/mic.js';
 import { getTuning, tuningNotes } from './lib/tunings.js';
 import { loadData, saveData } from './lib/storage.js';
@@ -17,6 +17,7 @@ import { ChallengeView } from './views/Challenge.jsx';
 import { ProgressView, UnlockCard } from './views/Progress.jsx';
 import { ArcadeView } from './views/Arcade.jsx';
 import { IntervalsView } from './views/Intervals.jsx';
+import { ScalesView } from './views/Scales.jsx';
 
 // ==========================================
 // MENÜ
@@ -135,6 +136,7 @@ function Menu({ settings, update, progress, go, onPrivacy, onExport, onSnooze })
       </div>
 
       <WideTile icon={Shapes} title="Intervalle" text="Griff-Formen vom Grundton aus (Stufe 2)" onClick={() => go('intervals')} />
+      <WideTile icon={Music} title="Tonarten" text="Dur, Moll, Modi, Pentatonik – ganzes Griffbrett mit Stufen" onClick={() => go('scales')} />
       <WideTile icon={ArrowDownToLine} title="Fallende Töne" text="Im richtigen Moment spielen, wird immer schneller" onClick={() => go('arcade')} />
 
       <div className="grid grid-cols-2 gap-3">
@@ -220,6 +222,7 @@ export default function App() {
         )}
         {view === 'onenote' && <OneNoteView settings={settings} update={update} setProgress={setProgress} onBack={back} />}
         {view === 'challenge' && <ChallengeView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
+        {view === 'scales' && <ScalesView settings={settings} update={update} setProgress={setProgress} onBack={back} />}
         {view === 'intervals' && <IntervalsView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
         {view === 'arcade' && <ArcadeView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
         {view === 'progress' && <ProgressView settings={settings} progress={progress} onBack={back} />}

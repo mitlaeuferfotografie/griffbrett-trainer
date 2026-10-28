@@ -134,7 +134,7 @@ export function milestoneDefs(strings, names) {
       id: `iv:${g.id}:${strings.join(',')}`,
       label: `Intervalle: ${g.label} sitzen`,
       check: ({ progress }) => {
-        const shapes = activeShapes(strings, i + 1).filter((s) => g.semis.includes(s.semis));
+        const shapes = activeShapes(strings, i + 1).filter((s) => g.semis.includes(s.deg));
         return shapes.length > 0 && shapes.every((s) => status(progress.intervals.units[s.key]) === 'sitzt');
       },
     });

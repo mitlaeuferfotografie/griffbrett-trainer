@@ -19,29 +19,17 @@ export const STATUS_LABEL = { none: 'nicht eingeführt', unsicher: 'unsicher', w
 const MARKERS = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24];
 
 /**
- * cell(string, fret) → { className, label, ring } für Bund 1 … fretMax.
+ * cell(string, fret) → { className, label, ring } für Bund 1 … fretMax
+ * (mit withOpen zusätzlich Bund 0 = Leersaiten über dem Sattel).
  * onCell(string, fret) macht Zellen antippbar (enabled(string, fret) schränkt ein).
  */
-export function Fretboard({ strings, fretMax, names, cell, onCell, enabled, rowClass = 'h-7' }) {
+export function Fretboard({ strings, fretMax, names, cell, onCell, enabled, rowClass = 'h-7', withOpen = false }) {
   const cols = { gridTemplateColumns: `1.75rem repeat(${strings.length}, minmax(0, 1fr))` };
   const rows = [];
   for (let f = 1; f <= fretMax; f++) rows.push(f);
-  return (
-    <div className="select-none">
-      <div className="grid gap-1" style={cols}>
-        <div />
-        {strings.map((m, s) => (
-          <div key={s} className="text-center text-xs font-black text-slate-400">
-            {noteName(m, names)}
-          </div>
-        ))}
-      </div>
-      <div className="grid gap-1 mt-1 mb-1" style={cols}>
-        <div />
-        <div className="h-1.5 rounded-full bg-slate-300" style={{ gridColumn: `span ${strings.length} / span ${strings.length}` }} />
-      </div>
-      <div className="grid gap-1" style={cols}>
-        {rows.map((f) => (
+  const renderRows = (list) => (
+    <div className="grid gap-1" style={cols}>
+      {list.map((f) => (
           <React.Fragment key={f}>
             <div
               className={`flex items-center justify-end pr-1 text-[11px] tabular ${
@@ -68,7 +56,24 @@ export function Fretboard({ strings, fretMax, names, cell, onCell, enabled, rowC
             })}
           </React.Fragment>
         ))}
+    </div>
+  );
+  return (
+    <div className="select-none">
+      <div className="grid gap-1" style={cols}>
+        <div />
+        {strings.map((m, s) => (
+          <div key={s} className="text-center text-xs font-black text-slate-400">
+            {noteName(m, names)}
+          </div>
+        ))}
       </div>
+      {withOpen && <div className="mt-1">{renderRows([0])}</div>}
+      <div className="grid gap-1 mt-1 mb-1" style={cols}>
+        <div />
+        <div className="h-1.5 rounded-full bg-slate-300" style={{ gridColumn: `span ${strings.length} / span ${strings.length}` }} />
+      </div>
+      {renderRows(rows)}
     </div>
   );
 }
