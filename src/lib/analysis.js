@@ -193,56 +193,74 @@ function positionPrior(p, center) {
 const inWindow = (c, p) => c.fret === 0 || (c.fret >= p && c.fret <= p + SPAN);
 
 /**
+ * Kosten zwischen zwei aufeinanderfolgenden Tönen (Vorschlag des Nutzers: lieber die Saite
+ * wechseln als weit auf einer Saite springen). Sprünge über eine Hand-Spanne hinaus (> 4 Bünde)
+ * auf derselben Saite kosten deutlich – innerhalb einer Box (z. B. Bund 5 → 8) sind sie normal.
+ * Über mehrere Saiten springen kostet etwas.
+ */
+function stepCost(a, b) {
+  if (a.fret === 0 || b.fret === 0) return 0;
+  const df = Math.abs(a.fret - b.fret);
+  const ds = Math.abs(a.string - b.string);
+  let c = 0;
+  if (ds === 0 && df > SPAN) c += 0.8 + 0.2 * (df - SPAN);
+  if (ds > 1) c += 0.05 * (ds - 1);
+  return c;
+}
+
+/**
  * Wahrscheinlichste Positionen für eine Tonfolge. Modell: Die Hand steht in einer Lage p
- * (Bund p … p+4, Leersaiten immer), Lagenwechsel kosten; gesucht ist die Lagenfolge mit den
- * geringsten Kosten (Viterbi), optional mit Vorliebe für eine Lage (POSITION_PREFS).
+ * (Bund p … p+4, Leersaiten immer); Lagenwechsel kosten, dazu die Schrittkosten zwischen den
+ * Tönen (stepCost). Zustand = (Position des Tons, Lage); gesucht ist der günstigste Weg
+ * (Viterbi), optional mit Vorliebe für eine Lage (POSITION_PREFS).
  * midis: [MIDI], candidatesFor(midi) → [{ string, fret }].
  * Rückgabe: [{ string, fret }] gleicher Länge (null, wenn ein Ton nirgends spielbar ist).
  */
 export function estimatePath(midis, candidatesFor, prefer = 'auto') {
   const center = (POSITION_PREFS[prefer] || POSITION_PREFS.auto).center;
-  const cands = midis.map((m) => candidatesFor(m));
-  const P = MAX_POS + 1;
-  let dp = Array.from({ length: P }, (_, p) => positionPrior(p, center));
-  const back = [];
-  cands.forEach((cs, i) => {
-    if (!cs.length) {
-      back.push(null);
-      return;
+  const layers = []; // je Ton: Zustände [{ c, p, cost, prev }]
+  midis.forEach((m) => {
+    const cands = candidatesFor(m);
+    const states = [];
+    for (const c of cands) {
+      for (let p = 0; p <= MAX_POS; p++) {
+        if (!inWindow(c, p)) continue;
+        // Leersaiten: nur eine Lage je Zustand nötig – die bisherige wird übernommen (s. u.)
+        states.push({ c, p });
+      }
     }
-    const next = new Array(P).fill(Infinity);
-    const bp = new Array(P).fill(0);
-    for (let p = 0; p < P; p++) {
-      if (!cs.some((c) => inWindow(c, p))) continue;
+    const prevLayer = [...layers].reverse().find((l) => l.length);
+    for (const st of states) {
+      const local = positionPrior(st.p, center) * (prevLayer ? 0.2 : 1) + (st.c.fret === 0 ? 0.05 : 0);
+      if (!prevLayer) {
+        st.cost = local;
+        st.prev = null;
+        continue;
+      }
       let best = Infinity;
-      let arg = p;
-      for (let q = 0; q < P; q++) {
-        const v = dp[q] + (i === 0 ? (q === p ? 0 : Infinity) : shiftCost(q, p));
+      let arg = null;
+      for (const ps of prevLayer) {
+        const v = ps.cost + shiftCost(ps.p, st.p) + stepCost(ps.c, st.c);
         if (v < best) {
           best = v;
-          arg = q;
+          arg = ps;
         }
       }
-      next[p] = best + positionPrior(p, center) * 0.2;
-      bp[p] = arg;
+      st.cost = best + local;
+      st.prev = arg;
     }
-    if (next.every((v) => v === Infinity)) {
-      back.push(null);
-      return;
-    }
-    dp = next;
-    back.push(bp);
+    layers.push(states);
   });
-  // Rückverfolgung der Lagen
   const out = new Array(midis.length).fill(null);
-  let p = dp.indexOf(Math.min(...dp));
-  for (let i = midis.length - 1; i >= 0; i--) {
-    if (!back[i]) continue;
-    const cs = cands[i].filter((c) => inWindow(c, p));
-    // innerhalb der Lage: gegriffene Töne vor Leersaiten, möglichst mittig
-    cs.sort((a, b) => (a.fret === 0) - (b.fret === 0) || Math.abs(a.fret - (p + 2)) - Math.abs(b.fret - (p + 2)));
-    out[i] = cs[0] || null;
-    p = back[i][p];
+  let lastIdx = layers.length - 1;
+  while (lastIdx >= 0 && !layers[lastIdx].length) lastIdx--;
+  if (lastIdx < 0) return out;
+  // günstigsten Endzustand zurückverfolgen
+  let st = layers[lastIdx].reduce((a, b) => (b.cost < a.cost ? b : a));
+  for (let i = lastIdx; i >= 0 && st; i--) {
+    if (!layers[i].length) continue;
+    out[i] = st.c;
+    st = st.prev;
   }
   return out;
 }

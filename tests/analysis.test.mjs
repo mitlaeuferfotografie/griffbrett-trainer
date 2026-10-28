@@ -109,3 +109,22 @@ test('Weg bleibt in einer Hand-Lage statt zu springen', () => {
   const frets = path.map((p) => p.fret);
   assert.ok(Math.max(...frets) - Math.min(...frets) <= 5, JSON.stringify(path));
 });
+
+test('Saitenwechsel statt weiter Sprünge auf einer Saite (Box-Muster, 5. Lage)', () => {
+  // A-Moll-Pentatonik Box 1 aufwärts: jede Saite 2 Töne, Bund 5–8
+  const phrase = [45, 48, 50, 52, 55, 57, 60, 62, 64, 67, 69, 72];
+  const path = estimatePath(phrase, cand, 'auto');
+  assert.ok(path.every((p) => p.fret >= 5 && p.fret <= 8), JSON.stringify(path));
+  // nie mehr als 3 Bünde Sprung zwischen zwei Tönen auf derselben Saite
+  for (let i = 1; i < path.length; i++) {
+    if (path[i].string === path[i - 1].string) assert.ok(Math.abs(path[i].fret - path[i - 1].fret) <= 3, JSON.stringify(path));
+  }
+});
+
+test('Lauf in hoher Lage: Saitenwechsel statt Rutschen auf der hohen E-Saite', () => {
+  // E-Moll-Pentatonik um Bund 12: D-Saite 12/14, G 12/14, H 12/15, E 12/15
+  const phrase = [62, 64, 67, 69, 71, 74, 76, 79];
+  const path = estimatePath(phrase, cand, 'auto');
+  assert.ok(path.every((p) => p.fret >= 11 && p.fret <= 16), JSON.stringify(path));
+  assert.ok(new Set(path.map((p) => p.string)).size >= 4, JSON.stringify(path));
+});
