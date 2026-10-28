@@ -229,7 +229,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-950 text-slate-100 safe-area ${isTab ? 'pb-24' : ''}`}>
+    <div className={`min-h-screen bg-slate-950 text-slate-100 safe-area ${isTab ? 'with-tabbar' : ''}`}>
       <div className="max-w-md landscape:max-w-4xl mx-auto">
         {view === 'menu' && (
           <Menu

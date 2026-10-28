@@ -76,3 +76,9 @@ body {
 .tabbar-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* Seiten mit Reiter-Leiste: Platz für Leiste (≈ 4 rem) + Home-Indikator + etwas Luft.
+   Muss nach .safe-area stehen, sonst überschreibt dessen padding-bottom diesen Abstand. */
+.with-tabbar {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 6.5rem);
+}
