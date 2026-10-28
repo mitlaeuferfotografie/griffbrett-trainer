@@ -12,7 +12,7 @@ export const DEFAULT_PROGRESS = {
   units: {},
   days: {}, // 'YYYY-MM-DD' → { sec, answers, correct }
   totals: { sessions: 0, answers: 0, correct: 0, sec: 0 },
-  bests: { run: 0, sitzt: 0, rtByString: {}, challenge: {} },
+  bests: { run: 0, sitzt: 0, rtByString: {}, challenge: {}, arcade: {} },
   milestones: {}, // id → { day, label }
   unlocked: {}, // tuningId → Anzahl freier Gruppen
   lastExport: null,
@@ -25,7 +25,7 @@ export function normalizeProgress(p) {
     ...d,
     ...(p || {}),
     totals: { ...d.totals, ...(p?.totals || {}) },
-    bests: { ...d.bests, ...(p?.bests || {}), rtByString: { ...(p?.bests?.rtByString || {}) }, challenge: { ...(p?.bests?.challenge || {}) } },
+    bests: { ...d.bests, ...(p?.bests || {}), rtByString: { ...(p?.bests?.rtByString || {}) }, challenge: { ...(p?.bests?.challenge || {}) }, arcade: { ...(p?.bests?.arcade || {}) } },
   };
 }
 

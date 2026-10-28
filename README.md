@@ -13,6 +13,7 @@ Privates Projekt, **nicht** auf der Übersichtsseite der Lern-Apps eingetragen.
 | Stimmgerät | fertig, weiterer Hardware-Test folgt |
 | Diagnose (Live-Werte, erkannte Töne, Selbsttest auf dem Gerät) | fertig |
 | **Version 1:** Ton finden, adaptive Wiederholung, Heatmap, Session, Gamification, Export/Import, Hell-Modus, Offline | fertig (28.10.2026), Praxistest am iPhone steht aus |
+| Übung „Fallende Töne“ (Timing, steigendes Tempo) | fertig (28.10.2026) |
 | Impressum & Datenschutz | fertig |
 | Ausbaustufe 2 und 3 | Roadmap |
 
@@ -36,6 +37,15 @@ Ein Ton (gewählt oder zufällig) nacheinander auf allen Saiten von tief nach ho
 
 ### Challenge
 Alle natürlichen Töne einer Saite (Bund 1–12) in zufälliger Reihenfolge auf Zeit, mit Bestzeit pro Saite. Falsche Töne kosten nur Zeit. Freiwillig, nur mit Mikrofon, **zählt nicht im Lernstand**, damit Zeitdruck die adaptive Wiederholung nicht verfälscht.
+
+### Fallende Töne (`src/lib/arcade.js`, `src/views/Arcade.jsx`)
+Töne fallen in der Spur ihrer Saite (dicke Saite links) auf eine Trefferlinie zu und müssen im richtigen Moment gespielt werden.
+- **Timing:** Fortschritt p (0 = oben, 1 = Linie). Unter 0,6 „zu früh“ (zählt nicht, Ton fällt weiter), 0,6–0,85 „gut“, 0,85–1,15 „perfekt“, danach verpasst.
+- **Tempo:** 10 Stufen, Fallzeit 6 s (Stufe 1) bis ca. 1,5 s (Stufe 10). Alle 8 Treffer eine Stufe schneller, nach 2 verpassten Tönen in Folge eine Stufe langsamer.
+- **Start-Tempo:** automatisch aus dem Anteil sitzender Positionen und der bisher erreichten Höchststufe (2 darunter), oder Ruhig (1) / Mittel (4) / Schnell (7).
+- **Töne:** freigeschaltete Positionen (bevorzugt bereits eingeführte) oder alle natürlichen Töne auf allen Saiten.
+- **Punkte:** 100 (gut) bzw. 150 (perfekt) × Stufe × Serien-Multiplikator (+1 je 10 Treffer in Folge). 5 Leben: Nur durchgerutschte Töne kosten ein Leben, ein falscher Ton beendet nur die Serie.
+- Bestwert und höchste Stufe je Tonvorrat. Zählt **nicht** im Lernstand (Zeitdruck), die Spielzeit zählt als Übungszeit.
 
 ### Lernstand (adaptive Wiederholung, `src/lib/srs.js`)
 - **Lerneinheit = Leersaitenton × Bund** (Schlüssel z. B. `45:8` = F auf der A-Saite). 6- und 7-Saiter teilen sich so den Lernstand gemeinsamer Saiten; Drop-Saiten haben eigene Einheiten.
@@ -99,7 +109,7 @@ src/
   App.jsx              Menü, Navigation, Datenhaltung (settings + progress), Theme
   index.js             Einstieg, Service-Worker-Registrierung
   tailwind-input.css   Tailwind, Farbvariablen (dunkel/hell), Safe Area
-  views/               Training (Session + Zusammenfassung), OneNote, Challenge, Progress,
+  views/               Training (Session + Zusammenfassung), OneNote, Challenge, Arcade, Progress,
                        Tuner, Diagnose, Settings, Legal (Impressum & Datenschutz)
   ui/
     common.jsx         Card, Header, Segmented, LevelMeter, MicGate (Mikrofon-Zugang)
@@ -122,6 +132,7 @@ src/
     curriculum.js      Gruppen, Freischaltung, aktive Positionen
     session.js         Aufgabenwahl, Prüflogik (Tonklasse + Lage)
     stats.js           Übungstage, Wochenziel, Bestwerte, Meilensteine, Zusammenfassung
+    arcade.js          „Fallende Töne“: Tempo, Timing-Zonen, Punkte, Stufen, Tonvorrat
     storage.js         localStorage, Export/Import
 public/                index.html, manifest.json, sw.js, icons/
 scripts/               build.mjs, serve.mjs (lokaler Server), make-icons.mjs

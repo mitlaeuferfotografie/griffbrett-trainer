@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Gauge, Activity, Settings, Play, BarChart3, Layers, Timer, HardDriveDownload } from 'lucide-react';
+import { Gauge, Activity, Settings, Play, BarChart3, Layers, Timer, HardDriveDownload, ArrowDownToLine } from 'lucide-react';
 import { startMic } from './audio/mic.js';
 import { getTuning, tuningNotes } from './lib/tunings.js';
 import { loadData, saveData } from './lib/storage.js';
@@ -15,6 +15,7 @@ import { TrainingView } from './views/Training.jsx';
 import { OneNoteView } from './views/OneNote.jsx';
 import { ChallengeView } from './views/Challenge.jsx';
 import { ProgressView, UnlockCard } from './views/Progress.jsx';
+import { ArcadeView } from './views/Arcade.jsx';
 
 // ==========================================
 // MENÜ
@@ -115,6 +116,19 @@ function Menu({ settings, update, progress, go, onPrivacy, onExport, onSnooze })
         <UnlockCard settings={settings} progress={progress} compact />
       </div>
 
+      <button
+        onClick={() => go('arcade')}
+        className="w-full flex items-center gap-4 p-4 mb-3 rounded-3xl border-2 bg-slate-900 border-slate-800 text-left transition-transform active:scale-[0.98]"
+      >
+        <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-slate-800 flex-shrink-0">
+          <ArrowDownToLine className="w-6 h-6" />
+        </div>
+        <div className="flex-1">
+          <div className="font-black leading-tight">Fallende Töne</div>
+          <div className="text-xs text-slate-400 mt-0.5">Im richtigen Moment spielen, wird immer schneller</div>
+        </div>
+      </button>
+
       <div className="grid grid-cols-2 gap-3">
         <Tile icon={BarChart3} title="Fortschritt" text="Heatmap, Kalender, Bestwerte" onClick={() => go('progress')} />
         <Tile icon={Layers} title="Ein Ton – alle Saiten" text="Oktav-Verbindungen" onClick={() => go('onenote')} />
@@ -198,6 +212,7 @@ export default function App() {
         )}
         {view === 'onenote' && <OneNoteView settings={settings} update={update} setProgress={setProgress} onBack={back} />}
         {view === 'challenge' && <ChallengeView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
+        {view === 'arcade' && <ArcadeView settings={settings} update={update} progress={progress} setProgress={setProgress} onBack={back} />}
         {view === 'progress' && <ProgressView settings={settings} progress={progress} onBack={back} />}
         {view === 'tuner' && <TunerView settings={settings} update={update} onBack={back} />}
         {view === 'diagnose' && <DiagnoseView settings={settings} update={update} onBack={back} />}

@@ -28,8 +28,9 @@ Private Gitarren-App für einen erwachsenen, ausgebildeten Musiker (E-Gitarre, s
 - `srs.js`: FAST_SEC 3, SLOW_SEC 8, „sitzt“ = Box 3 (schnell + richtig an ≥ 2 Tagen), Antippen max. Box 2, Fehler −2 Boxen (min. 1).
 - `curriculum.js`: Freischaltung bei ≥ 80 % „wird“ und ≥ 50 % „sitzt“, bleibt freigeschaltet.
 - `session.js`: Mischung 70/20/10, Arbeitsmenge 5 „unsichere“ Positionen, max. 12 neue pro Session, Fehler kommen nach 3 Aufgaben wieder.
-- Challenge zählt nicht im Lernstand. „Ein Ton – alle Saiten“ zählt normal.
-- Änderungen hier: Tests in `tests/learning.test.mjs` anpassen/ergänzen.
+- Challenge und „Fallende Töne“ zählen nicht im Lernstand (Zeitdruck), nur als Übungszeit. „Ein Ton – alle Saiten“ zählt normal.
+- `arcade.js`: Fallzeit 6 s → ca. 1,5 s über 10 Stufen, +1 Stufe je 8 Treffer, −1 nach 2 verpassten in Folge, Zonen 0,6/0,85/1,15, 5 Leben.
+- Änderungen hier: Tests in `tests/learning.test.mjs` bzw. `tests/arcade.test.mjs` anpassen/ergänzen.
 
 ## Gestaltung
 - Hell-Modus über CSS-Variablen der Slate-Skala (`tailwind-input.css`, `tailwind.config.cjs`): nur `slate-*` für neutrale Flächen/Texte verwenden, damit beide Modi passen; auf farbigen Buttons `text-white`.

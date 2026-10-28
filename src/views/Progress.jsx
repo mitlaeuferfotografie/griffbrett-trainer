@@ -177,6 +177,13 @@ export function ProgressView({ settings, progress, onBack }) {
               {challengeBests.map(({ s, v }) => (
                 <Row key={`ch${s}`} k={`Challenge ${stringName(strings, s, names)}`} v={fmtSec(v / 1000)} />
               ))}
+              {['learned', 'naturals'].filter((m) => progress.bests.arcade?.[m]).map((m) => (
+                <Row
+                  key={`ar${m}`}
+                  k={`Fallende Töne (${m === 'learned' ? 'freigeschaltete' : 'alle natürlichen'})`}
+                  v={`${progress.bests.arcade[m].score.toLocaleString('de-DE')} · Stufe ${progress.bests.arcade[m].level}`}
+                />
+              ))}
               <Row k="Sessions / richtige Antworten" v={`${progress.totals.sessions} / ${progress.totals.correct}`} />
             </div>
           </Card>
