@@ -14,6 +14,7 @@ import {
 } from '../lib/arcade.js';
 import { startMic } from '../audio/mic.js';
 import { createAnswerGate } from '../audio/answer.js';
+import { TRACKER_ANSWER } from '../audio/detector.js';
 import { useMicStatus, useMicFrames, useTracker } from '../ui/hooks.js';
 import { Card, Header, MicGate, Segmented, namesOf } from '../ui/common.jsx';
 
@@ -29,7 +30,7 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
   const names = namesOf(settings);
   const fretMax = settings.fretMax;
   const mic = useMicStatus();
-  const tracker = useTracker(settings);
+  const tracker = useTracker(settings, TRACKER_ANSWER);
 
   const [phase, setPhase] = useState('setup'); // setup | play | over
   const [mode, setMode] = useState('learned');
@@ -123,8 +124,16 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
   // Richtiger Ton zählt sofort, falscher erst nach kurzem stabilem Klang (Slides/Geräusche)
   const gate = useMemo(() => createAnswerGate({ holdWrongMs: 250 }), []);
 
+  // Nachklang-Sperre: derselbe Ton zählt erst nach neuem Anschlag wieder
+  const heard = useRef({ midi: null, onset: false });
+
   useMicFrames((frame) => {
-    const u = tracker.update(frame);
+    let u = tracker.update(frame);
+    if (u.onset) heard.current.onset = true;
+    if (u.event) {
+      if (u.event.midi === heard.current.midi && !heard.current.onset) u = { ...u, event: null };
+      else heard.current = { midi: u.event.midi, onset: false };
+    }
     if (!running || !game.current) return;
     const g = game.current;
     const target = g.notes.filter((n) => n.state === 'live').sort((a, b) => a.t0 - b.t0)[0];
@@ -132,7 +141,10 @@ export function ArcadeView({ settings, update, progress, setProgress, onBack }) 
       gate.reset();
       return;
     }
-    const answer = gate.update(u, frame.time, (m) => judge(strings, target, m, fretMax).correct);
+    const answer = gate.update(u, frame.time, (m) => {
+      const r = judge(strings, target, m, fretMax);
+      return r.correct && r.playedFret >= 1;
+    });
     if (!answer) return;
     const p = (g.time - target.t0) / target.fall;
     const correct = answer.correct;

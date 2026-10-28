@@ -149,3 +149,27 @@ test('Hintergrundgeräusche (Brummen, Störton) erzeugen keine Töne – normal 
   assert.deepEqual(streamProfile(parts, {}, 4096), []);
   assert.deepEqual(streamProfile(parts, TRACKER_FAST, 2048), []);
 });
+
+import { TRACKER_ANSWER } from '../src/audio/detector.js';
+import { synthesize as synth2, WAVEFORMS as W2 } from '../src/audio/synth.js';
+
+test('Antwort-Profil: mitschwingende Leersaite (25 dB leiser) löst keinen Ton aus', () => {
+  const sampleRate = 48000;
+  const played = pluckTone(57, 600, { drive: 8, seed: 2 }); // A angeschlagen
+  // danach klingt nur noch die tiefe E-Saite leise mit (≈ 25 dB unter dem Anschlag)
+  const reso = synth2(W2.find((w) => w.id === 'gitarre'), 82.41, { sampleRate, length: Math.round(1.5 * sampleRate), startTime: 0 });
+  const quiet = reso.map((x) => x * 0.03);
+  const parts = [roomNoise(1000), played, quiet, roomNoise(500)];
+  const ev = streamProfile(parts, TRACKER_ANSWER, 4096);
+  assert.deepEqual(ev, [57]);
+  // ohne das Profil würde die mitschwingende Saite als Ton gemeldet
+  assert.ok(streamProfile(parts, {}, 4096).includes(40));
+});
+
+test('Antwort-Profil: normal gespielte Tonfolge wird vollständig erkannt', () => {
+  const seq = [45, 48, 50, 52, 55, 57];
+  const parts = [roomNoise(1000)];
+  seq.forEach((m, i) => parts.push(pluckTone(m, 350, { drive: i % 2 ? 8 : 0, seed: i + 4 })));
+  parts.push(roomNoise(800));
+  assert.deepEqual(streamProfile(parts, TRACKER_ANSWER, 4096), seq);
+});

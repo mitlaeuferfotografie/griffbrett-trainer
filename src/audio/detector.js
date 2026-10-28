@@ -22,6 +22,7 @@ export const TRACKER_DEFAULTS = {
   onsetRefractoryMs: 150,
   minRepeatMs: 0, // gleicher Ton innerhalb dieser Zeit wird nicht erneut gemeldet
   adaptiveFloorDb: 0, // > 0: Ton muss so viel über dem mitlaufend gemessenen Raumpegel liegen
+  peakRelDb: 0, // > 0: Ton darf höchstens so viel leiser sein als das zuletzt Gespielte (gegen Mitschwingen)
 };
 
 /**
@@ -41,6 +42,17 @@ export const TRACKER_FAST = {
   minRepeatMs: 150,
   // gegen Hintergrundgeräusche: Ton muss 12 dB über dem gemessenen Raumpegel liegen
   adaptiveFloorDb: 12,
+};
+
+/**
+ * Profil für Übungen mit richtig/falsch (Ton finden, Tonlauf …): mitschwingende Leersaiten und
+ * Raumgeräusche sollen keine Antwort auslösen. Ein Ton muss 12 dB über dem Raumpegel liegen und
+ * darf höchstens 20 dB leiser sein als der zuletzt gespielte (Spitzenpegel klingt ca. 3 dB/s ab).
+ */
+export const TRACKER_ANSWER = {
+  adaptiveFloorDb: 12,
+  peakRelDb: 20,
+  minRepeatMs: 150,
 };
 
 export function rmsToDb(rms) {
@@ -64,6 +76,7 @@ export function createNoteTracker(options = {}) {
   let lastOnset = -Infinity;
   let lastEvent = { midi: null, time: -Infinity };
   let floor = -90; // mitlaufender Raumpegel: folgt leisen Phasen schnell, steigt nur langsam
+  let peak = -120; // Spitzenpegel des Gespielten, klingt langsam ab
   const recentDb = [];
 
   function reset() {
@@ -95,10 +108,11 @@ export function createNoteTracker(options = {}) {
     }
     // Raumpegel nachführen (fällt sofort, steigt ca. 1,5 dB pro Sekunde)
     floor = db < floor ? db : floor + 0.025;
+    peak = Math.max(db, peak - 0.05);
     recentDb.push(db);
     if (recentDb.length > o.onsetWindow) recentDb.shift();
 
-    const floorOk = !o.adaptiveFloorDb || db >= floor + o.adaptiveFloorDb;
+    const floorOk = (!o.adaptiveFloorDb || db >= floor + o.adaptiveFloorDb) && (!o.peakRelDb || db >= peak - o.peakRelDb);
     const valid = frame.freq != null && db >= o.minDb && floorOk && frame.clarity >= o.minClarity;
     if (!valid) {
       invalid++;

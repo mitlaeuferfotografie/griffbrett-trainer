@@ -3,6 +3,7 @@ import { Mic } from 'lucide-react';
 import { noteName } from '../lib/notes.js';
 import { useMicFrames, useTracker } from './hooks.js';
 import { createAnswerGate } from '../audio/answer.js';
+import { TRACKER_ANSWER } from '../audio/detector.js';
 import { Card } from './common.jsx';
 
 // ==========================================
@@ -233,7 +234,8 @@ export function fmtTime(ms) {
  * Rutsch- und Nebengeräusche werden so nicht als Fehler gewertet (src/audio/answer.js).
  */
 export function MicAnswer({ settings, task, armed, blockMidi, onNote, isCorrect }) {
-  const tracker = useTracker(settings);
+  // Antwort-Profil: Raumgeräusche und mitschwingende Saiten lösen keine Antwort aus
+  const tracker = useTracker(settings, TRACKER_ANSWER);
   const gate = useMemo(() => createAnswerGate(), []);
   const st = useRef({ id: null, start: 0, onset: false, done: false });
   const [db, setDb] = useState(-120);
