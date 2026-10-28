@@ -102,3 +102,15 @@ test('Audiostrom: Tonfolge inkl. tiefer H-Saite und Wiederholung wird korrekt er
   const seq = [35, 40, 45, 45, 53, 76];
   assert.deepEqual(streamEvents(seq), seq);
 });
+
+test('Standard-Schwelle −75 dB: leiser Ton (−70 dB) wird erkannt, Rauschen ohne klare Tonhöhe nicht', () => {
+  const tr = createNoteTracker();
+  const events = [];
+  for (let i = 0; i < 10; i++) {
+    const r = tr.update(frame(i * 16, 45, 0.0003));
+    if (r.event) events.push(r.event.midi);
+  }
+  assert.deepEqual(events, [45]);
+  const tr2 = createNoteTracker();
+  for (let i = 0; i < 10; i++) assert.equal(tr2.update(frame(i * 16, 45, 0.0003, 0.5)).event, null);
+});

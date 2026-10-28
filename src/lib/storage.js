@@ -9,7 +9,7 @@ export const DEFAULT_SETTINGS = {
   a4: 440,
   naming: 'de', // 'de' (H/B) | 'int' (B/B♭)
   accidentals: 'sharp', // 'sharp' | 'flat' | 'both'
-  minDb: -50, // Eingangsschwelle
+  minDb: -75, // Eingangsschwelle (am iPhone mit Gitarre ermittelt, 28.10.2026)
   fretMax: 12,
   sessionMinutes: 5,
   micExplained: false,

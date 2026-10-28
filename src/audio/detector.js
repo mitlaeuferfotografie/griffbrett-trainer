@@ -11,7 +11,7 @@
 import { freqToMidi } from '../lib/notes.js';
 
 export const TRACKER_DEFAULTS = {
-  minDb: -50,
+  minDb: -75,
   minClarity: 0.8,
   stableFrames: 4,
   toleranceCents: 40,

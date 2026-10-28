@@ -32,7 +32,7 @@ Privates Projekt, **nicht** auf der Übersichtsseite der Lern-Apps eingetragen.
 
 ### Hinweise zur Erkennung
 - Unverstärkte E-Gitarre ist fürs Handy-Mikrofon sehr leise → leise über Amp/Kopfhörer-Amp oder Westerngitarre.
-- Die **Eingangsschwelle** (Einstellungen) bestimmt, ab welchem Pegel gemessen wird. Die Diagnose zeigt den Pegel live mit Schwellen-Markierung.
+- Die **Eingangsschwelle** (Einstellungen, −90 … −30 dB, Standard **−75 dB** – am iPhone mit Gitarre als bester Wert ermittelt) bestimmt, ab welchem Pegel gemessen wird. Rauschen über der Schwelle wird zusätzlich über die Klarheit der Tonhöhe ausgefiltert. Die Diagnose zeigt den Pegel live mit Schwellen-Markierung.
 
 ## Technik
 

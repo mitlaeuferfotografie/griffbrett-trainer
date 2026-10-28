@@ -114,7 +114,7 @@ function Segmented({ options, value, onChange }) {
 }
 
 function LevelMeter({ db, minDb }) {
-  const pct = (v) => Math.max(0, Math.min(100, ((v + 80) / 80) * 100));
+  const pct = (v) => Math.max(0, Math.min(100, ((v + 90) / 90) * 100));
   const above = db >= minDb;
   return (
     <div>
@@ -591,8 +591,8 @@ function SettingsView({ settings, update, onBack, onPrivacy }) {
         <Section title={`Eingangsschwelle: ${settings.minDb} dB`}>
           <input
             type="range"
-            min={-75}
-            max={-25}
+            min={-90}
+            max={-30}
             step={1}
             value={settings.minDb}
             onChange={(e) => update({ minDb: Number(e.target.value) })}
